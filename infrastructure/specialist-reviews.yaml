@@ -1,0 +1,25 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Merken specialist reviews, separate from analyses and suggestion reviews.
+Resources:
+  SpecialistReviews:
+    Type: AWS::DynamoDB::Table
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      TableName: merken_specialist_reviews
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: astronaut_id
+          AttributeType: S
+        - AttributeName: review_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: astronaut_id
+          KeyType: HASH
+        - AttributeName: review_id
+          KeyType: RANGE
+Outputs:
+  TableName:
+    Value: !Ref SpecialistReviews
+  TableArn:
+    Value: !GetAtt SpecialistReviews.Arn

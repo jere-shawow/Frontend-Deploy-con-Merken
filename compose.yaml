@@ -1,0 +1,11 @@
+services:
+  dashboard:
+    build: .
+    ports:
+      - "127.0.0.1:3001:3000"
+    environment:
+      DASHBOARD_BACKEND_URL: ${DASHBOARD_BACKEND_URL:-}
+      MERKEN_API_URL: ${MERKEN_API_URL:-}
+      MERKEN_TELEMETRY_URL: ${MERKEN_TELEMETRY_URL:-}
+      MERKEN_TELEMETRY_TOKEN: ${MERKEN_TELEMETRY_TOKEN:-}
+    restart: unless-stopped
