@@ -65,7 +65,7 @@ export default function Dashboard() {
     <Navbar active={section} onSelect={setSection} busy={busy} onRefresh={load}
       sourceLabel={error ? 'Connection error' : demoMode ? 'Demo data' : data?.upstreamSimulation ? 'Merken test data · 24h' : data ? 'Backend connected' : 'Crew telemetry'}/>
     <main>
-      <div className="intro"><h1>{current.title}</h1><p>{current.tag}</p></div>
+      <div className="intro"><h1>{current.title}</h1><p>{current.tag} · <a href="/directory">Astronaut directory</a></p></div>
       {error&&<p className="error" role="alert">{error}</p>}
       {busy&&!data&&<p className="muted" role="status">Loading crew telemetry…</p>}
       {data&&!crew.length&&<p className="muted">No crew members available.</p>}
