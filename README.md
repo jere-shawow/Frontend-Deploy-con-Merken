@@ -62,3 +62,5 @@ Send each crew member's Merken UUID as `astronaut_id` or `id`. To attach an exac
 ## Merken telemetry feed
 
 Set server-only `MERKEN_TELEMETRY_URL` and `MERKEN_TELEMETRY_TOKEN` in `.env.local` for local Next.js development, or in the Compose environment. This mode fetches the roster and paginated record history from Merken without running the frontend demo simulation. Use HTTPS for a shared or production API. This read feed is separate from the Merken review API.
+
+See [EC2 deployment](deploy/README.md) for CI/CD setup and network rules.

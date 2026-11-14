@@ -1,0 +1,15 @@
+services:
+  dashboard:
+    image: ${MERKEN_FRONTEND_IMAGE:?Set MERKEN_FRONTEND_IMAGE}
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3001:3000"
+    env_file:
+      - /docker/merken-frontend/runtime.env
+    networks:
+      - merken
+
+networks:
+  merken:
+    external: true
+    name: merken
