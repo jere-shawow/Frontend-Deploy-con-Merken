@@ -42,9 +42,9 @@ export default function Directory() {
       <button disabled={busy}>Search</button>
     </form>
     {message&&<p role="status">{message}</p>}
-    <button type="button" disabled={busy} onClick={()=>{setSelected(null);setDraft(JSON.stringify({name:''},null,2));}}>New astronaut</button>
+    <button type="button" disabled={busy} onClick={()=>{setSelected(null);setDraft(JSON.stringify({astronautName:''},null,2));}}>New astronaut</button>
     <div className="table-scroll"><table><thead><tr><th>ID</th><th>Name</th><th>Details</th></tr></thead>
-      <tbody>{rows.map(row=><tr key={row.id}><td>{row.id}</td><td>{row.name??row.displayName??row.display_name??'—'}</td>
+      <tbody>{rows.map(row=><tr key={row.id}><td>{row.id}</td><td>{row.astronautName??row.name??row.displayName??row.display_name??'—'}</td>
         <td><button disabled={busy} onClick={()=>run(async()=>{const record=await request('/'+encodeURIComponent(row.id));setSelected(row.id);const {id,...fields}=record;setDraft(JSON.stringify(fields,null,2));})}>Open</button></td>
       </tr>)}</tbody></table></div>
     {draft!==''&&<form className="review-form" onSubmit={save}>
