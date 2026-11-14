@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-directory=/docker/merken-frontend
+directory=/docker/front-web
 test -r "$directory/runtime.env"
 docker network inspect merken >/dev/null
-compose=(docker compose --project-name merken-frontend -f deploy/compose.yaml)
+install -m 0644 deploy/compose.yaml "$directory/compose.yaml"
+compose=(docker compose --project-name merken-frontend --project-directory "$directory" -f "$directory/compose.yaml")
 export MERKEN_FRONTEND_IMAGE="merken-frontend:${GITHUB_SHA}"
 previous=$(docker ps -a --filter label=com.docker.compose.project=merken-frontend --filter label=com.docker.compose.service=dashboard --format '{{.Image}}')
 
