@@ -22,7 +22,6 @@ function ProfileFacts({person}) {
 }
 
 const severity = {critical:0, warning:1, suggestion:2};
-const demoLogin = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEMO_LOGIN === 'true';
 
 function noticeKey(source, person, alert) {
   return JSON.stringify([source, person.id, alert.id ?? [alert.level, alert.title, alert.time, alert.detail]]);
@@ -30,7 +29,6 @@ function noticeKey(source, person, alert) {
 
 export default function Dashboard() {
   const router = useRouter();
-  const [authenticated, setAuthenticated] = useState(!demoLogin);
   const [dismissed, updateDismissed] = useLocalState('merken-dismissed-notifications-v1');
   const [groundAlerts, updateGroundAlerts] = useLocalState('merken-ground-notifications-v1');
   const [received, updateReceived] = useLocalState('merken-received-notifications-v1');
@@ -54,11 +52,6 @@ export default function Dashboard() {
     const timer = setInterval(() => setPhase(current => (current + 1) % scenarioCount), 6000);
     return () => clearInterval(timer);
   },[demoMode,running]);
-  useEffect(() => {
-    if (!demoLogin) return;
-    if (sessionStorage.getItem('merken-demo-session') === '1') setAuthenticated(true);
-    else router.replace('/login');
-  }, [router]);
   async function load({ quiet = false } = {}) {
     if (request.current) return;
     const controller = new AbortController();
@@ -81,7 +74,6 @@ export default function Dashboard() {
     }
   }
   useEffect(() => {
-    if (!authenticated) return;
     load();
     const timer = setInterval(() => load({ quiet: true }), 60000);
     return () => {
@@ -89,7 +81,7 @@ export default function Dashboard() {
       request.current?.abort();
       request.current = null;
     };
-  }, [authenticated]);
+  }, []);
   const crew = useMemo(() => demoMode ? simulateCrew(data.crew, phase) : (data?.crew ?? []), [data, demoMode, phase]);
   const selected=crew.find(person=>person.id===crewId) ?? crew[0];
   const metrics = selected?.metrics ?? [];
@@ -160,18 +152,19 @@ export default function Dashboard() {
       setDismissError('Could not save the notification in this browser.');
     }
   }
-  if (!authenticated) return null;
   return <div className="mission-shell">
     <Navbar active={section} onSelect={setSection} busy={busy} onRefresh={load}
       notificationCount={notifications.length}
-      onSignOut={demoLogin ? () => {
-        sessionStorage.removeItem('merken-demo-session');
-        setAuthenticated(false);
-        router.replace('/login');
-      } : undefined}
+      onSignOut={async () => {
+        try {
+          const response = await fetch('/api/demo-session', {method:'DELETE'});
+          if (!response.ok) throw new Error();
+          router.replace('/login'); router.refresh();
+        } catch { setError('Could not sign out. Please try again.'); }
+      }}
       sourceLabel={error ? 'Connection error' : demoMode ? 'Demo data' : data?.upstreamSimulation ? 'Merken test data · 24h' : data ? 'Backend connected' : 'Crew telemetry'}/>
     <main>
-      <div className="intro"><h1>{current.title}</h1>{current.tag && <p>{current.tag}</p>}</div>
+      <div className="intro"><h1>{current.title}</h1><p>{current.tag && <>{current.tag} · </>}<a href="/directory">Astronaut directory</a></p></div>
       {error&&<p className="error" role="alert">{error}</p>}
       {busy&&!data&&<p className="muted" role="status">Loading crew telemetry…</p>}
       {data&&!crew.length&&<p className="muted">No crew members available.</p>}

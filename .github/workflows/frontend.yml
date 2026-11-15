@@ -1,4 +1,4 @@
-name: Merken frontend
+name: Merken frontend CI/CD via SSM
 on:
   pull_request:
     branches: [main]
@@ -9,38 +9,63 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   ci:
     runs-on: ubuntu-24.04-arm
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Build ARM64 image
-        run: docker build -t merken-frontend:ci .
-      - name: Smoke test
+        run: docker build -t merken-frontend:${{ github.sha }} .
+      - name: Verify login and protected API in the built image
         run: |
-          docker run -d --name merken-ci -p 127.0.0.1:3001:3000 merken-frontend:ci
-          curl --fail --silent --show-error --retry 20 --retry-connrefused --retry-delay 2 http://127.0.0.1:3001/ > /dev/null
-      - name: Save image
-        if: github.ref == 'refs/heads/main'
-        run: docker save merken-frontend:ci | gzip > frontend.tar.gz
+          docker run -d --name merken-ci -p 127.0.0.1:3001:3000 \
+            -e ORBIT_PUBLIC_ORIGIN=http://localhost:3001 \
+            -e ORBIT_DEMO_PASSWORD="$(openssl rand -hex 24)" \
+            -e ORBIT_DEMO_SESSION_SECRET="$(openssl rand -hex 32)" \
+            merken-frontend:${{ github.sha }}
+          curl --fail --silent --show-error --retry 30 --retry-all-errors --retry-delay 2 --max-time 5 http://127.0.0.1:3001/login >/dev/null
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3001/api/dashboard)" = 401
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3001/)" = 307
+      - name: Save tested image
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        run: docker save merken-frontend:${{ github.sha }} | gzip > image.tar.gz
       - uses: actions/upload-artifact@v4
-        if: github.ref == 'refs/heads/main'
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         with:
           name: frontend-arm64
-          path: frontend.tar.gz
+          path: image.tar.gz
           retention-days: 3
 
   deploy:
-    if: github.ref == 'refs/heads/main' && vars.EC2_DEPLOY_ENABLED == 'true'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.EC2_DEPLOY_ENABLED == 'true'
     needs: ci
-    runs-on: [self-hosted, linux, ARM64, merken-frontend]
-    environment: production
+    runs-on: ubuntu-24.04-arm
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      id-token: write
     concurrency:
-      group: merken-frontend-production
+      group: frontend-production
       cancel-in-progress: false
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      DEPLOY_ARTIFACT_BUCKET: ${{ secrets.DEPLOY_ARTIFACT_BUCKET }}
+      SSM_INSTANCE_ID: ${{ secrets.SSM_INSTANCE_ID }}
+      DEPLOY_APP: frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: frontend-arm64
-      - run: bash deploy/deploy.sh
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+          role-session-name: merken-frontend-${{ github.run_id }}
+      - name: Deploy verified image through SSM
+        run: python3 deploy/ssm_deploy.py

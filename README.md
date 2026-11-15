@@ -1,6 +1,6 @@
-# Orbit Crew Health
+# Merken Mission Control
 
-Next.js dashboard for astronaut telemetry. The app starts with synthetic demo data.
+Next.js dashboard for astronaut telemetry. Production uses the configured astronaut backend; development without a backend uses synthetic demo data.
 
 ## Local development on Windows
 
@@ -11,20 +11,20 @@ npm ci
 npm run dev -- --port 3001
 ```
 
-Open http://localhost:3001. The development login accepts any non-empty username and password. It opens the dashboard using a browser session flag for the pitch. Press Ctrl+C to stop the server.
+Set `ORBIT_DEMO_PASSWORD` and a random `ORBIT_DEMO_SESSION_SECRET` in `.env.local`, then open http://localhost:3001. Sign in as `demo` with the configured password. Authentication uses the signed HTTP-only session cookie and protects both dashboard routes and APIs. Press Ctrl+C to stop the server.
 
 
 ## Backend handoff
 
-Set `DASHBOARD_BACKEND_URL` in `.env.local` for Next.js development or in the server environment. It must point to the backend's full dashboard GET URL. Next.js fetches it server-side through `/api/dashboard`. A configured backend failure appears in the UI. Demo mode is available when the URL is unset.
+Set `MERKEN_ASTRONAUTS_URL` to the backend origin in `.env.local` or the server environment. Next.js fetches `/api/astronauts` server-side and maps astronaut fields to dashboard metrics. A configured backend failure appears in the UI. Without a configured backend, only development returns demo data; production returns an explicit configuration error.
 
-Use the object in `lib/demo.js` as the response example. The backend returns `{ "crew": [...] }`. Each crew member has `id`, `name`, `role`, `initials`, `metrics`, and `alerts` arrays. Metric entries are `[id, label, currentValue, unit, numericReadingsOldestFirst, recordIds?, measuredAtTimestamps?]`. Alerts include `level` (critical, warning, or suggestion), `title`, `detail`, `recommendation`, and `time`. Provide a stable `id` per alert event so a dismissed alert stays dismissed after refresh. Return empty arrays when the respective data is unavailable.
+The internal `/api/dashboard` response is `{ "source": "backend", "crew": [...] }`. Each crew member has `id`, `name`, `initials`, `metrics`, and `alerts`. Metric entries are `[id, label, currentValue, unit, numericReadingsOldestFirst, recordIds?, measuredAtTimestamps?]`. The current astronaut adapter supplies current values without historical readings or alerts. Those remain empty until the upstream integration provides them. Demo examples are in `lib/demo.js`. Alert events use `level` (critical, warning, or suggestion), `title`, `detail`, `recommendation`, `time` and preferably a stable `id` for dismissal.
 
 Garmin ingestion, anomaly detection, and Amazon Nova inference through Amazon Bedrock belong to the team's backend. Return reviewed alert text and recommendations in the same response. The frontend requires zero AWS credentials. Demo alerts are illustrative.
 
-## Future EC2 deployment
+## EC2 deployment
 
-Deploy through `.github/workflows/frontend.yml`: pushes to `main` build and smoke-test the ARM64 Docker image, then deploy that tested image through the production runner when `EC2_DEPLOY_ENABLED=true`. See `deploy/README.md` for runner setup, runtime configuration and rollback. Production uses container port 3000, loopback host port 3001 and the external `merken` network.
+Deploy through `.github/workflows/frontend.yml`: pushes to `main` build and smoke-test the ARM64 Docker image, then deploy that tested image through AWS SSM with GitHub OIDC when `EC2_DEPLOY_ENABLED=true`. See `deploy/README.md` for configuration and rollback. Preserve the existing host Compose file and runtime environment. Production uses container port 3000 and loopback host port 3001.
 The optional crew-level `metricStatuses` object maps metric IDs to `normal`, `warning`, or `critical`. The body map shows `Not assessed` when a metric or its assessment is unavailable. Demo statuses are illustrative; live statuses must come from the backend.
 
 Crew profiles accept optional numeric `weightKg` and `heightCm`. Stress is read from the `stress` metric. The demo advances its telemetry simulation every six seconds. Use Pause or Next scenario to try the falling heart rate alert.

@@ -1,23 +1,16 @@
-'use client';
-
 import { Orbit } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 
-export default function Login() {
-  const router = useRouter();
-  function enter(event) {
-    event.preventDefault();
-    sessionStorage.setItem('merken-demo-session', '1');
-    router.replace('/');
-  }
+export default async function Login({searchParams}) {
+  const {error}=await searchParams;
   return <main className="demo-login">
     <section className="panel">
       <div className="logo"><Orbit size={23}/></div>
       <h1>Merken</h1>
       <p className="muted">Mission control · Demo access</p>
-      <form onSubmit={enter} className="review-form">
-        <label>Username<input name="username" autoComplete="off" required/></label>
-        <label>Password<input name="password" type="password" autoComplete="off" required/></label>
+      <form action="/api/demo-session" method="post" className="review-form">
+        <label>Username<input name="username" autoComplete="username" required/></label>
+        <label>Password<input name="password" type="password" autoComplete="current-password" required/></label>
+        {error&&<p role="alert">Invalid username or password.</p>}
         <button className="primary-action" type="submit">Enter dashboard</button>
       </form>
     </section>

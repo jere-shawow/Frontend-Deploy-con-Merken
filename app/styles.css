@@ -182,6 +182,7 @@ body,.mission-shell{
 .demo-login .muted{margin-top:7px}
 /* Responsive Merken workspace */
 input,textarea,select{font:inherit;min-width:0;max-width:100%}
+.intro a{color:var(--accent);text-underline-offset:3px}
 button,input,textarea,select,a,summary{touch-action:manipulation}
 input:focus-visible,textarea:focus-visible,summary:focus-visible,a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .details,.specialist,.specialist-content,.specialist-content>section,.specialist-chart,.trend-grid>*,.mission-aside,.mission-aside>section,.crew-summary,.overview-section{min-width:0}

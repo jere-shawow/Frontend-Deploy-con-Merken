@@ -1,28 +1,46 @@
-import { loadMerkenTelemetry } from '../../../lib/merken-telemetry';
-import { demo } from '../../../lib/demo';
 export const dynamic = 'force-dynamic';
+
+const fields = [
+  ['heart','Heart rate','heartRate','bpm'],
+  ['oxygen','Blood oxygen','oxygenInBlood','%'],
+  ['temperature','Body temperature','bodyTemperature','°C'],
+  ['sleep','Sleep','sleepHours','h'],
+  ['radiation','Space radiation','spaceRadiation',''],
+  ['glucose','Blood glucose','bloodSugar',''],
+  ['distance','Distance from Earth','distanceFromEarth',''],
+  ['nutrition','Nutrition','nutrition',''],
+  ['pressure','Blood pressure','bloodPressure',''],
+  ['mood','Mood','mood',''],
+];
+
 export async function GET() {
-  if (process.env.MERKEN_TELEMETRY_URL) {
-    const token=process.env.MERKEN_TELEMETRY_TOKEN;
-    if(!token) return Response.json({error:'Merken telemetry token is missing.'},{status:503});
-    try {
-      return Response.json(await loadMerkenTelemetry(process.env.MERKEN_TELEMETRY_URL,token),
-        {headers:{'Cache-Control':'no-store'}});
-    } catch {
-      return Response.json({error:'Merken telemetry is temporarily unavailable.'},{status:502});
-    }
+  const base=process.env.MERKEN_ASTRONAUTS_URL;
+  if (!base && process.env.NODE_ENV === 'development') {
+    const {demo} = await import('../../../lib/demo');
+    return Response.json(demo, {headers:{'Cache-Control':'no-store'}});
   }
-  if (!process.env.DASHBOARD_BACKEND_URL) return Response.json(demo);
+  if (!base) return Response.json({error:'Astronaut backend is not configured.'},{status:503});
   try {
-    const response = await fetch(process.env.DASHBOARD_BACKEND_URL, {
-      cache:'no-store', signal:AbortSignal.timeout(8000),
-      headers:{Accept:'application/json'}
+    const response=await fetch(new URL('/api/astronauts',base),{
+      cache:'no-store',redirect:'error',signal:AbortSignal.timeout(8000),
+      headers:{Accept:'application/json'},
     });
-    if (!response.ok) throw new Error('Upstream request failed');
-    const data = await response.json();
-    if (!Array.isArray(data.crew)) throw new Error('Invalid crew data');
-    return Response.json({ ...data, source:'backend' });
+    if (!response.ok) throw new Error('Astronaut API request failed');
+    const rows=await response.json();
+    if (!Array.isArray(rows)) throw new Error('Expected astronaut list');
+    const crew=rows.map(row=>({
+      id:String(row.id),
+      name:row.astronautName,
+      initials:row.astronautName.trim().split(/\s+/).slice(0,2).map(part=>part[0]).join(''),
+      metrics:fields.flatMap(([id,label,field,unit])=>{
+        const value=row[field];
+        return value==null || value==='' ? [] : [[id,label,value,unit,[]]];
+      }),
+      alerts:[],
+      metricStatuses:{},
+    }));
+    return Response.json({source:'backend',crew},{headers:{'Cache-Control':'no-store'}});
   } catch {
-    return Response.json({error:'Crew telemetry is temporarily unavailable.'},{status:502});
+    return Response.json({error:'Astronaut backend is unreachable.'},{status:502});
   }
 }
