@@ -1,3 +1,4 @@
+import {loadNotifications} from '../../../lib/backend-notifications';
 import { loadMerkenTelemetry } from '../../../lib/merken-telemetry';
 import { buildDashboardCrew } from '../../../lib/dashboard-crew';
 export const dynamic = 'force-dynamic';
@@ -22,6 +23,17 @@ export async function GET() {
   }
   if (!base) return Response.json({error:'Astronaut backend is not configured.'},{status:503});
   try {
+    const healthResult=fetch(new URL('/api/astronauts/health-status',base),{
+      cache:'no-store',redirect:'error',signal:AbortSignal.timeout(5000),
+      headers:{Accept:'application/json'},
+    }).then(async response=>{
+      if(!response.ok) throw new Error('Health status unavailable');
+      const data=await response.json();
+      if(!Array.isArray(data)) throw new Error('Invalid health status list');
+      return data;
+    }).catch(()=>null);
+    const notificationResult=loadNotifications(process.env.MERKEN_NOTIFICATIONS_URL || base)
+      .then(notifications=>({notifications}),()=>({notificationWarning:'Backend notifications are temporarily unavailable.'}));
     const response=await fetch(new URL('/api/astronauts',base),{
       cache:'no-store',redirect:'error',signal:AbortSignal.timeout(8000),
       headers:{Accept:'application/json'},
@@ -37,8 +49,9 @@ export async function GET() {
       } catch { telemetryWarning = 'Simulator history is temporarily unavailable. Showing backend observations.'; }
     }
     const observedAt = new Date().toISOString();
-    const crew = buildDashboardCrew(rows, simulatedCrew, observedHistory, observedAt);
-    return Response.json({source:'backend',crew, observedAt, telemetryWarning},{headers:{'Cache-Control':'no-store'}});
+    const health = await healthResult;
+    const crew = buildDashboardCrew(rows, simulatedCrew, observedHistory, observedAt, health ?? []);
+    return Response.json({source:'backend',crew, observedAt, telemetryWarning, healthWarning:health===null ? "Backend health assessments are unavailable." : undefined, ...await notificationResult},{headers:{'Cache-Control':'no-store'}});
   } catch {
     return Response.json({error:'Astronaut backend is unreachable.'},{status:502});
   }

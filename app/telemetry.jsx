@@ -2,6 +2,7 @@ import {useEffect,useId,useRef,useState} from 'react';
 import Image from 'next/image';
 import { readingWindow } from '../lib/reading-window';
 import {metricState,states} from '../lib/metric-status';
+import {readingRange,rangeLabels} from '../lib/reading-range';
 export {metricState,states} from '../lib/metric-status';
 import {Activity, ArrowDownRight, ArrowRight, ArrowUpRight, HeartPulse, Wind, Moon, Waves, Footprints} from 'lucide-react';
 
@@ -29,7 +30,7 @@ export function BodyMap({metrics, statuses, active, onSelect}) {
         const [key,label,value,unit] = metric;
         const status = metricState(metric, statuses);
         const Icon = regions[key]?.[2] ?? Activity;
-        return <button key={key} data-status={status} aria-pressed={key===active} onClick={()=>onSelect(key)}>
+        return <button key={key} data-status={status} data-range={readingRange(metric)} aria-pressed={key===active} onClick={()=>onSelect(key)}>
           <Icon size={17} className="signal-icon"/>
           <span className="signal-name">{label}</span>
           <strong>{value ?? '—'} <small>{unit}</small></strong>
@@ -55,7 +56,7 @@ export function BodyMap({metrics, statuses, active, onSelect}) {
           const status = metricState(metric, statuses);
           const description = label + ' · ' + states[status];
           return <button key={key} title={description} aria-label={description} aria-pressed={key===active}
-            className="hotspot" data-status={status} style={{left:left+'%',top:top+'%'}} onClick={()=>onSelect(key)}>
+            className="hotspot" data-status={status} data-range={readingRange(metric)} style={{left:left+'%',top:top+'%'}} onClick={()=>onSelect(key)}>
             <Icon size={15}/>
           </button>;
         })}
@@ -115,10 +116,11 @@ export function Trend({metric, statuses, compact=false, featured=false, onSelect
     const index = Math.round((position.x-58)/(plotRight-58)*Math.max(points.length-1,0));
     setReading(index);
   }
-  return <section className={compact?"panel trend compact-trend":"panel trend"} data-status={status} aria-label={label + ' trend'}>
+  return <section className={compact?"panel trend compact-trend":"panel trend"} data-status={status} data-range={readingRange(metric)} aria-label={label + ' trend'}>
     <div className="panel-heading"><div><div className="eyebrow">{featured?"PRIMARY TREND":"TELEMETRY TREND"}</div><h2>{label}</h2></div><label className="trend-window">Show <select value={limit} onChange={e=>{setLimit(Number(e.target.value));setReading(null);}}><option value={7}>Last 7 readings</option><option value={14}>Last 14 readings</option><option value={0}>All readings</option></select></label></div>
     {points.length > 0 && <p className="trend-period">{points.length} {metric[7] === 'observed' ? points.length === 1 ? 'observed snapshot' : 'observed snapshots' : points.length === 1 ? 'reading' : 'readings'} · {period}
       {metric[7] === 'observed' && <><br/>Live observations collected by this dashboard. History starts when connected.</>}</p>}
+    {readingRange(metric)&&<span className="reading-range-label">Reference range · {rangeLabels[readingRange(metric)]}</span>}
     <div className="trend-summary">
       <div className="trend-current"><span>Current</span><strong>{value ?? 'No reading'} <small>{unit}</small></strong><span className="reading-status"><i/>{states[status]}</span></div>
       {points.length>0&&[['Minimum',min],['Average',mean],['Maximum',max]].map(([name,val])=><div key={name}><span>{name}</span><strong>{number.format(val)} <small>{unit}</small></strong></div>)}

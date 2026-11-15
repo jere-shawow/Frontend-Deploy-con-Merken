@@ -1,0 +1,6 @@
+.astronaut-registration{margin-block:1rem;padding:1rem}
+.registration-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr));gap:.75rem}
+.directory-actions{display:flex;flex-wrap:wrap;gap:.5rem}
+.garmin-dialog{width:min(28rem,calc(100% - 2rem));margin:auto;padding:1.25rem;background:var(--panel);color:var(--fg)}
+.garmin-dialog::backdrop{background:rgb(0 0 0 / .65)}
+.garmin-dialog .muted{margin-top:.35rem}

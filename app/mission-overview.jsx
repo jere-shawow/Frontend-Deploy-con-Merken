@@ -1,3 +1,4 @@
+import {readingRange,rangeLabels} from '../lib/reading-range';
 import { Activity, ArrowUpRight, Bell, ChevronRight, Droplets, HeartPulse, Moon, Radio, Thermometer, Waves, Zap } from 'lucide-react';
 import { metricState, states, Trend } from './telemetry';
 import CrewIdentity, { CrewVitals } from './crew-identity';
@@ -52,9 +53,10 @@ export default function MissionOverview({crew,selected,metricId,onMetric,onCrew,
           const [id,label,value,unit] = metric;
           const Icon = icons[id] ?? Activity;
           const status = metricState(metric, selected.metricStatuses);
-          return <div className="signal-tile" key={id}><button type="button" className="crew-secondary-signal" data-status={status}
+          return <div className="signal-tile" key={id}><button type="button" className="crew-secondary-signal" data-status={status} data-range={readingRange(metric)}
             aria-pressed={active?.[0] === id} onClick={() => onMetric(id)}>
             <span><Icon size={14}/>{label}</span><strong>{value}<small>{unit}</small></strong>
+            {readingRange(metric)&&<small className="reading-range-label">{rangeLabels[readingRange(metric)]}</small>}
             {status !== 'unknown' && <small className="signal-state">{states[status]}</small>}
             <span className="signal-tile-footer">{metric[4]?.length ?? 0} {metric[7] === 'observed' ? 'observations' : 'readings'}</span>
           </button></div>;
@@ -69,9 +71,8 @@ export default function MissionOverview({crew,selected,metricId,onMetric,onCrew,
           : <p className="muted">No readings available for this astronaut.</p>}
         </div><aside className="crew-context-grid" aria-label="Supporting telemetry">
           <section className="crew-context-panel"><div className="context-heading"><h3>Latest readings</h3><span>{available.length} signals</span></div>
-            {additional.length ? <div className="compact-readings">{additional.map(([id,label,value,unit]) =>
-              <button type="button" key={id} aria-pressed={active?.[0] === id} onClick={() => onMetric(id)}><span>{label}</span><strong>{value} <small>{unit}</small></strong></button>
-            )}</div> : <p className="muted">All available signals are shown above.</p>}
+            {additional.length ? <div className="compact-readings">{additional.map(metric => {const [id,label,value,unit]=metric; return <button type="button" key={id} data-range={readingRange(metric)} aria-pressed={active?.[0] === id} onClick={() => onMetric(id)}><span>{label}</span><strong>{value} <small>{unit}</small></strong></button>;
+            })}</div> : <p className="muted">All available signals are shown above.</p>}
           </section>
           <section className="crew-context-panel"><div className="context-heading"><h3>Crew alerts</h3><button type="button" className="text-link" onClick={onNotifications}>View all<ArrowUpRight size={12}/></button></div>
             {alerts.length ? <div className="compact-alerts">{alerts.slice(0,3).map(({person,alert},index) =>

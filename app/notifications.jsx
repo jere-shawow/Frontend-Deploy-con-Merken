@@ -3,6 +3,7 @@
 import { ArrowUpRight, Bell, Plus, Trash2, X } from 'lucide-react';
 import {useState} from 'react';
 import CrewSwitcher from './crew-switcher';
+import {rangeLabels} from '../lib/reading-range';
 
 const levels = { critical: 'Critical', warning: 'Warning', suggestion: 'Advisory' };
 const timestamp = new Intl.DateTimeFormat('en-GB', {
@@ -46,15 +47,16 @@ export default function Notifications({notifications, visible, crew, selected, f
     </form>}
     {error && <p className="error" role="alert">{error}</p>}
     <div className="notification-list">
-      {visible.length ? visible.map(({person, alert, key, receivedAt}) => <article className="notification-row" data-level={alert.level} key={key}>
+      {visible.length ? visible.map(({person, alert, key, receivedAt, canOpen=true}) => <article className="notification-row" data-level={alert.level} data-range={alert.direction} key={key}>
         <div className="notification-severity"><i/>{levels[alert.level] ?? 'Advisory'}</div>
         <div className="notification-body">
-          <div className="notification-meta"><button className="notification-person" onClick={() => onCrew(person.id)}>
-            {person.name}<ArrowUpRight size={12}/></button><div className="notification-times">
+          <div className="notification-meta">{canOpen?<button className="notification-person" onClick={() => onCrew(person.id)}>
+            {person.name}<ArrowUpRight size={12}/></button>:<span>{person.name}</span>}<div className="notification-times">
               <AlertTime label="Sent" value={alert.sentAt ?? alert.time}/>
               <AlertTime label="Received" value={receivedAt}/>
             </div></div>
           <h3>{alert.title}</h3><p>{alert.detail}</p>
+          {alert.parameter&&<p className="reading-range-label">{alert.parameter}{alert.measuredValue!=null&&" · "+alert.measuredValue+" "+(alert.unit??"")}{rangeLabels[alert.direction]&&" · "+rangeLabels[alert.direction]}</p>}
           {alert.recommendation && <div className="notification-recommendation"><span>Recommended action</span><p>{alert.recommendation}</p></div>}
         </div>
         <button className="notification-dismiss" title="Dismiss notification" aria-label={`Dismiss ${alert.title} for ${person.name}`}

@@ -123,7 +123,14 @@ export default function Dashboard() {
     const person = crew.find(member => member.id === crewId);
     return savedSource === source && person && !dismissedKeys.has(key) ? [[key, { person, alert, key, receivedAt }]] : [];
   });
-  const notifications = [...new Map([...savedNotices, ...currentNotices]).values()];
+  const backendNotices=(data?.notifications ?? []).flatMap(({crewId,name,alert})=>{
+    const member=crew.find(person=>person.id===crewId);
+    const rosterMember=data?.crew?.find(person=>person.id===crewId);
+    const person=member ?? {id:crewId,name:rosterMember?.name ?? name ?? 'Crew member'};
+    const key=noticeKey('backend-notifications',person,alert);
+    return dismissedKeys.has(key)?[]:[{person,alert,key,canOpen:!!member}];
+  });
+  const notifications = [...new Map([...savedNotices, ...currentNotices]).values(), ...backendNotices];
   const visible = notifications.filter(({alert}) => filter === 'all' || alert.level === filter)
     .sort((a,b) => (severity[a.alert.level] ?? 3) - (severity[b.alert.level] ?? 3));
 
@@ -170,6 +177,7 @@ export default function Dashboard() {
       sourceLabel={error ? 'Connection error' : demoMode ? 'Demo data' : selected?.telemetrySource === 'garmin' ? 'Garmin linked' : selected?.telemetrySource === 'simulation' ? 'EC2 simulation' : data ? 'Backend connected' : 'Crew telemetry'}/>
     <main>
       <div className="intro command-intro"><div><span className="eyebrow">MERKEN / MISSION CONTROL</span><h1>{current.title}</h1>{current.tag && <p>{current.tag}</p>}</div><a className="directory-link" href="/directory">Astronaut directory ↗</a></div>
+      {data?.healthWarning&&<p className="muted" role="status">{data.healthWarning}</p>}
       {error&&<p className="error" role="alert">{error}</p>}
       {data?.telemetryWarning && <p className="error" role="status">{data.telemetryWarning}</p>}
       {busy&&!data&&<p className="muted" role="status">Loading crew telemetry…</p>}
@@ -203,7 +211,7 @@ export default function Dashboard() {
       {section==='notifications' && <Notifications notifications={notifications} visible={visible}
         crew={crew} selected={selected} filter={filter} onFilter={setFilter}
         creating={creatingAlert} onToggleCreate={() => setCreatingAlert(!creatingAlert)} onCreate={createAlert}
-        canCreate={!!crew.length && !!groundAlerts} canDismiss={!!dismissed} error={dismissError}
+        canCreate={!!crew.length && !!groundAlerts} canDismiss={!!dismissed} error={dismissError || data?.notificationWarning}
         onDismiss={dismiss} onCrew={openAstronaut}/>}
       <CrewRecords active={section==='records'} crew={crew} selected={selected} onCrew={selectCrew} source={source} fresh={!!data && !error}/>
     </main>

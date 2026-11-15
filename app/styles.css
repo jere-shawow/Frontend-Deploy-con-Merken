@@ -509,3 +509,18 @@ input:focus-visible,textarea:focus-visible,summary:focus-visible,a:focus-visible
 .chart-tooltip .chart-tooltip-value{fill:#fff;font-size:12px;font-weight:600}
 .chart-tooltip .chart-tooltip-reading{fill:#aaa;font-size:9px}
 .reading-point:focus-visible{outline:none}
+[data-range="low"]{--range-color:#a6c4e0}
+[data-range="very_low"]{--range-color:#b8c7e5}
+[data-range="high"]{--range-color:#e8c27d}
+[data-range="very_high"]{--range-color:#f0a2a2}
+.reading-range-label{color:var(--range-color,var(--muted));font-size:.8rem}
+.crew-secondary-signal[data-range],.compact-readings button[data-range]{border-inline-start-color:var(--range-color,var(--edge))}
+.crew-secondary-signal[data-range]>strong,.compact-readings button[data-range]>strong,.trend[data-range] .trend-summary>div:first-child strong{color:var(--range-color,var(--fg))}
+.hotspot[data-range]{color:var(--range-color,var(--signal));border-color:var(--range-color,var(--signal))}
+.notification-row[data-range="high"]{--range-color:#ffe066}
+.notification-row[data-range="very_high"]{--range-color:#ff7272}
+.notification-row[data-range="low"]{--range-color:#8edcff}
+.notification-row[data-range="very_low"]{--range-color:#7197ff}
+.notification-row[data-range] .notification-severity{color:var(--range-color,var(--fg))}
+.notification-row[data-range] .notification-severity i{width:8px;height:8px}
+.notification-recommendation p{white-space:pre-wrap}
