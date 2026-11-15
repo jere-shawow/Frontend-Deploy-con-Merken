@@ -2,6 +2,24 @@
 
 Next.js dashboard for astronaut telemetry. Production uses the configured astronaut backend; development without a backend uses synthetic demo data.
 
+## Pulsys Recommendation (MVP)
+
+The recommendation panel organizes the original English response into assessment,
+next steps and conditional off-duty options when those boundaries are present.
+It does not generate additional advice in the browser.
+
+Use **Save recommendation** to store the response, generation time and original
+snapshot in this browser's localStorage, separately for each astronaut. Open
+**Saved recommendations** to view it again after a reload. Saved snapshots are
+explicitly historical; generating again requests current backend data. Saving and
+viewing history do not invoke Bedrock. Duplicate saves are avoided and older
+records are never automatically evicted. Storage failures are visible.
+
+This is device/browser-local storage, not a server backup or account-isolated,
+encrypted medical archive. Other users of the same browser profile may access it;
+clearing site data or private browsing may remove it. Do not use this MVP history
+as the only copy of important records. No AWS credentials are stored in it.
+
 ## DynamoDB backend local
 
 Para un backend Merken compatible, usa `MERKEN_TELEMETRY_URL=http://127.0.0.1:4000` en
