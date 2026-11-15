@@ -9,6 +9,10 @@ on:
 permissions:
   contents: read
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   ci:
     runs-on: ubuntu-24.04-arm
@@ -24,7 +28,7 @@ jobs:
             -e ORBIT_DEMO_PASSWORD="$(openssl rand -hex 24)" \
             -e ORBIT_DEMO_SESSION_SECRET="$(openssl rand -hex 32)" \
             merken-frontend:${{ github.sha }}
-          curl --fail --silent --show-error --retry 30 --retry-connrefused --retry-delay 2 http://127.0.0.1:3001/login >/dev/null
+          curl --fail --silent --show-error --retry 30 --retry-all-errors --retry-delay 2 --max-time 5 http://127.0.0.1:3001/login >/dev/null
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3001/api/dashboard)" = 401
           test "$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:3001/)" = 307
       - name: Save tested image
