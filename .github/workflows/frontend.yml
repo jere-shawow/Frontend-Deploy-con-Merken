@@ -21,6 +21,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build ARM64 image
         run: docker build -t merken-frontend:${{ github.sha }} .
+      - name: Test dashboard data and display rules in the built image
+        run: |
+          docker run --rm --entrypoint node \
+            --mount type=bind,src="${{ github.workspace }}/lib",dst=/checks,readonly \
+            merken-frontend:${{ github.sha }} --test \
+            /checks/crew-display.test.mjs /checks/dashboard-crew.test.mjs \
+            /checks/metric-status.test.mjs /checks/reading-window.test.mjs
       - name: Verify login and protected API in the built image
         run: |
           docker run -d --name merken-ci -p 127.0.0.1:3001:3000 \

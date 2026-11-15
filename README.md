@@ -18,7 +18,7 @@ Set `ORBIT_DEMO_PASSWORD` and a random `ORBIT_DEMO_SESSION_SECRET` in `.env.loca
 
 Set `MERKEN_ASTRONAUTS_URL` to the backend origin in `.env.local` or the server environment. Next.js fetches `/api/astronauts` server-side and maps astronaut fields to dashboard metrics. A configured backend failure appears in the UI. Without a configured backend, only development returns demo data; production returns an explicit configuration error.
 
-The internal `/api/dashboard` response is `{ "source": "backend", "crew": [...] }`. Each crew member has `id`, `name`, `initials`, `metrics`, and `alerts`. Metric entries are `[id, label, currentValue, unit, numericReadingsOldestFirst, recordIds?, measuredAtTimestamps?]`. The current astronaut adapter supplies current values without historical readings or alerts. Those remain empty until the upstream integration provides them. Demo examples are in `lib/demo.js`. Alert events use `level` (critical, warning, or suggestion), `title`, `detail`, `recommendation`, `time` and preferably a stable `id` for dismissal.
+The internal `/api/dashboard` response is `{ "source": "backend", "crew": [...] }`. Each crew member has `id`, `name`, `initials`, `metrics`, `alerts` and `telemetrySource`. Metric entries are `[id, label, currentValue, unit, numericReadingsOldestFirst, recordIds?, timestamps?, timeBasis?]`. Garmin-linked astronauts retain their backend values; synthetic history is never assigned to them. The dashboard collects observed changes and new syncs in bounded server memory (288 snapshots per metric, reset on server restart), labelled as observations rather than historical measurement timestamps. With the telemetry feed configured, unlinked astronauts use simulator history matched by name, and simulator-only astronauts appear under their own names. Other backend astronauts retain their latest observed values. Demo examples are in `lib/demo.js`. Alert events use `level` (critical, warning, or suggestion), `title`, `detail`, `recommendation`, `time` and preferably a stable `id` for dismissal.
 
 Garmin ingestion, anomaly detection, and Amazon Nova inference through Amazon Bedrock belong to the team's backend. Return reviewed alert text and recommendations in the same response. The frontend requires zero AWS credentials. Demo alerts are illustrative.
 
@@ -30,6 +30,8 @@ The optional crew-level `metricStatuses` object maps metric IDs to `normal`, `wa
 Crew profiles accept optional numeric `weightKg` and `heightCm`. Stress is read from the `stress` metric. The demo advances its telemetry simulation every six seconds. Use Pause or Next scenario to try the falling heart rate alert.
 
 The dashboard refreshes telemetry once a minute while open. Notifications aggregates upstream alerts by astronaut, with priority filters and per-alert dismissal. Operator-created advisories and dismissals are stored in the current browser; they are not delivered to the mobile app. To try a local notification, choose New advisory and select a crew member.
+
+Notifications show separate sent and received timestamps, including seconds and the viewer's timezone. Incoming alerts record their first receipt in this browser. Legacy entries without recorded timestamps say Not recorded instead of inventing a historical time.
 
 Chart windows count readings: Last 7 readings, Last 14 readings or All readings. When matching measurement timestamps are available, the chart also shows the actual elapsed minutes, hours or days and the UTC endpoints. Without timestamps, it explicitly reports that a time interval is unavailable. The horizontal axis is the reading sequence, not elapsed time.
 
@@ -46,7 +48,9 @@ This prototype stores reviews per crew member and data source in browser local s
 
 ## Dashboard navigation
 
-Overview shows crew averages and recommendations. Astronauts shows individual telemetry and alerts. Specialist shows detailed readings and review creation.
+The approved body illustration is `public/resources/person-example.png`. Next Image delivers responsive, cached WebP versions and lazy-loads the illustration. The provisional treatment inspired by `idea.jpg` lives in `app/reference-effects.css`, scoped to `reference-preview`; it reuses Merken's existing color variables and fonts, with CSS-only depth, rounded signal tiles, circular actions and compact top navigation. It adds no dependencies or continuous animations and respects reduced-motion preferences.
+
+Overview shows a compact roster of at most seven astronauts, with heart rate and reported mood next to each name. Garmin-linked astronauts are prioritized, followed by simulated astronauts with history, preserving source order. The same visible roster is used by astronaut selectors, notifications and records; the upstream roster is not changed. The focused workspace shows the selected astronaut, available signal cards, one selectable chart, supporting readings and crew alerts. Astronauts shows individual telemetry with additional charts collapsed until requested. Specialist shows detailed readings and review creation.
 
 The Overview includes stress, sleep and space radiation trends for the selected crew member. Radiation uses the optional `radiation` metric. Demo radiation is synthetic. Without backend readings the dashboard shows No reading.
 

@@ -1,21 +1,24 @@
 'use client';
 
 import { ArrowUpRight, Bell, Plus, Trash2, X } from 'lucide-react';
+import {useState} from 'react';
+import CrewSwitcher from './crew-switcher';
 
 const levels = { critical: 'Critical', warning: 'Warning', suggestion: 'Advisory' };
 const timestamp = new Intl.DateTimeFormat('en-GB', {
-  day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'UTC',
+  day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', second:'2-digit', timeZoneName:'short',
 });
 
-function AlertTime({value}) {
+function AlertTime({value, label}) {
   const date = typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value) ? Date.parse(value) : NaN;
-  return Number.isFinite(date)
-    ? <time dateTime={value} title={value}>{timestamp.format(date)} UTC</time>
-    : <span>{value || 'Time unavailable'}</span>;
+  return <span className="notification-time"><span>{label}</span>{Number.isFinite(date)
+    ? <time dateTime={value} title={value}>{timestamp.format(date)}</time>
+    : <span>Not recorded</span>}</span>;
 }
 
 export default function Notifications({notifications, visible, crew, selected, filter, onFilter,
   creating, onToggleCreate, onCreate, canCreate, canDismiss, error, onDismiss, onCrew}) {
+  const [recipient,setRecipient] = useState(selected?.id ?? '');
   return <section className="panel notifications" aria-label="Crew notification center">
     <header className="notification-header">
       <div><span className="eyebrow">MERKEN / COMMUNICATIONS</span><h2>Crew notifications</h2>
@@ -36,20 +39,21 @@ export default function Notifications({notifications, visible, crew, selected, f
     </div>
     {creating && <form id="notification-compose" className="review-form ground-alert-form" onSubmit={onCreate}>
       <div className="compose-heading"><h3>New crew advisory</h3><span className="eyebrow">MISSION CONTROL</span></div>
-      <label>Crew member<select name="crewId" defaultValue={selected?.id} required>
-        {crew.map(person => <option key={person.id} value={person.id}>{person.name}</option>)}
-      </select></label>
+      <CrewSwitcher crew={crew} selectedId={recipient} onSelect={setRecipient} name="crewId"/>
       <label>Subject<input name="title" placeholder="Brief, specific subject" maxLength={100} required/></label>
       <label>Message<textarea name="detail" placeholder="Describe the update or requested action" rows={3} maxLength={500} required/></label>
       <button className="primary-action" type="submit">Save advisory</button>
     </form>}
     {error && <p className="error" role="alert">{error}</p>}
     <div className="notification-list">
-      {visible.length ? visible.map(({person, alert, key}) => <article className="notification-row" data-level={alert.level} key={key}>
+      {visible.length ? visible.map(({person, alert, key, receivedAt}) => <article className="notification-row" data-level={alert.level} key={key}>
         <div className="notification-severity"><i/>{levels[alert.level] ?? 'Advisory'}</div>
         <div className="notification-body">
           <div className="notification-meta"><button className="notification-person" onClick={() => onCrew(person.id)}>
-            {person.name}<ArrowUpRight size={12}/></button><AlertTime value={alert.time}/></div>
+            {person.name}<ArrowUpRight size={12}/></button><div className="notification-times">
+              <AlertTime label="Sent" value={alert.sentAt ?? alert.time}/>
+              <AlertTime label="Received" value={receivedAt}/>
+            </div></div>
           <h3>{alert.title}</h3><p>{alert.detail}</p>
           {alert.recommendation && <div className="notification-recommendation"><span>Recommended action</span><p>{alert.recommendation}</p></div>}
         </div>

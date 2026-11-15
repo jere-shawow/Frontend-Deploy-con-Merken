@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useLocalState } from './use-local-state';
+import CrewSwitcher from './crew-switcher';
 
 const format = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
 
@@ -89,22 +90,15 @@ export default function CrewRecords({ active, crew, selected, onCrew, source, fr
   }
 
   return <section className="panel crew-records">
+    <CrewSwitcher crew={crew} selectedId={selected?.id} onSelect={id => {onCrew(id);setMessage('');}}/>
     <div className="panel-heading">
-      <label className="crew-picker">Crew member
-        <select value={selected?.id ?? ''} onChange={event => { onCrew(event.target.value); setMessage(''); }}>
-          {crew.map(person => <option key={person.id} value={person.id}>{person.name}</option>)}
-        </select>
-      </label>
+      <h2>{selected ? selected.name + ' · Records' : 'Crew records'}</h2>
       <button className="primary-action" onClick={() => setGenerating(!generating)} disabled={!ready || !fresh || !crew.length}
         aria-expanded={generating}>Generate record</button>
     </div>
     {generating && <form className="record-form" onSubmit={generate}>
-      <label className="crew-picker">Select astronaut
-        <select name="astronaut" required defaultValue="">
-          <option value="" disabled>Choose crew member</option>
-          {crew.map(person => <option key={person.id} value={person.id}>{person.name}</option>)}
-        </select>
-      </label>
+      <input type="hidden" name="astronaut" value={selected?.id ?? ''}/>
+      <p>Generate a record for <strong>{selected?.name}</strong>.</p>
       <button className="primary-action" disabled={!fresh}>Save record</button>
     </form>}
     {message && <p role="status">{message}</p>}

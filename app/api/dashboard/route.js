@@ -1,17 +1,7 @@
+import { loadMerkenTelemetry } from '../../../lib/merken-telemetry';
+import { buildDashboardCrew } from '../../../lib/dashboard-crew';
 export const dynamic = 'force-dynamic';
-
-const fields = [
-  ['heart','Heart rate','heartRate','bpm'],
-  ['oxygen','Blood oxygen','oxygenInBlood','%'],
-  ['temperature','Body temperature','bodyTemperature','°C'],
-  ['sleep','Sleep','sleepHours','h'],
-  ['radiation','Space radiation','spaceRadiation',''],
-  ['glucose','Blood glucose','bloodSugar',''],
-  ['distance','Distance from Earth','distanceFromEarth',''],
-  ['nutrition','Nutrition','nutrition',''],
-  ['pressure','Blood pressure','bloodPressure',''],
-  ['mood','Mood','mood',''],
-];
+const observedHistory = new Map();
 
 export async function GET() {
   const base=process.env.MERKEN_ASTRONAUTS_URL;
@@ -28,18 +18,16 @@ export async function GET() {
     if (!response.ok) throw new Error('Astronaut API request failed');
     const rows=await response.json();
     if (!Array.isArray(rows)) throw new Error('Expected astronaut list');
-    const crew=rows.map(row=>({
-      id:String(row.id),
-      name:row.astronautName,
-      initials:row.astronautName.trim().split(/\s+/).slice(0,2).map(part=>part[0]).join(''),
-      metrics:fields.flatMap(([id,label,field,unit])=>{
-        const value=row[field];
-        return value==null || value==='' ? [] : [[id,label,value,unit,[]]];
-      }),
-      alerts:[],
-      metricStatuses:{},
-    }));
-    return Response.json({source:'backend',crew},{headers:{'Cache-Control':'no-store'}});
+    let simulatedCrew = [], telemetryWarning;
+    if (process.env.MERKEN_TELEMETRY_URL && process.env.MERKEN_TELEMETRY_TOKEN) {
+      try {
+        const telemetry = await loadMerkenTelemetry(process.env.MERKEN_TELEMETRY_URL, process.env.MERKEN_TELEMETRY_TOKEN);
+        if (telemetry.upstreamSimulation) simulatedCrew = telemetry.crew;
+      } catch { telemetryWarning = 'Simulator history is temporarily unavailable. Showing backend observations.'; }
+    }
+    const observedAt = new Date().toISOString();
+    const crew = buildDashboardCrew(rows, simulatedCrew, observedHistory, observedAt);
+    return Response.json({source:'backend',crew, observedAt, telemetryWarning},{headers:{'Cache-Control':'no-store'}});
   } catch {
     return Response.json({error:'Astronaut backend is unreachable.'},{status:502});
   }

@@ -1,0 +1,162 @@
+/* Provisional idea.jpg treatment. Uses the existing Merken palette and type. */
+.reference-preview{
+  --surface-glint:color-mix(in srgb,var(--fg) 6%,transparent);
+  --surface-shade:color-mix(in srgb,var(--base) 45%,transparent);
+  display:block;
+}
+.reference-preview .app-navbar{
+  position:sticky;top:0;z-index:20;display:grid;
+  grid-template-columns:auto minmax(0,1fr) auto;align-items:center;
+  gap:24px;width:100%;height:auto;min-height:72px;overflow:visible;
+  padding:12px 24px;border:0;border-bottom:1px solid var(--edge);
+  background:var(--panel);box-shadow:0 1px 0 var(--surface-glint);
+}
+.reference-preview .brand{display:flex;align-items:center;gap:10px;padding:0;font-size:13px}
+.reference-preview .brand div{text-align:left}
+.reference-preview .brand div span{font-size:8px}
+.reference-preview .logo{width:36px;height:36px;border-radius:12px;background:var(--base)}
+.reference-preview .section-nav{
+  grid-row:auto;grid-column:auto;display:flex;flex-direction:row;
+  align-items:center;justify-content:center;gap:6px;width:auto;max-width:none;margin:0;padding:0;
+}
+.reference-preview .section-nav button{
+  display:flex;flex-direction:row;align-items:center;justify-content:center;
+  width:auto;min-width:0;min-height:40px;padding:9px 15px;gap:8px;
+  border:1px solid transparent;border-radius:999px;background:transparent;
+  box-shadow:none;font-size:11px;
+}
+.reference-preview .section-nav button svg{width:15px;height:15px;display:block}
+.reference-preview .section-nav button[aria-current=page]{
+  background:var(--accent);border-color:var(--accent);color:var(--base);
+  box-shadow:inset 0 1px 0 var(--surface-glint),0 3px 10px var(--surface-shade);
+}
+.reference-preview .section-nav button:not([aria-current=page]):hover{background:var(--surface-glint)}
+.reference-preview .notification-count{
+  position:static;min-width:16px;background:var(--base);color:var(--fg);
+  padding:2px 4px;font-size:9px;
+}
+.reference-preview .header-actions{display:flex;align-items:center;gap:8px;margin:0}
+.reference-preview .source{max-width:140px;padding:6px 10px;white-space:nowrap;font-size:10px;border-radius:999px}
+.reference-preview .refresh{
+  border-radius:50%;min-height:40px;min-width:40px;
+  background:linear-gradient(145deg,var(--surface-glint),transparent),var(--panel);
+  box-shadow:inset 0 1px 0 var(--surface-glint);
+}
+.reference-preview>main{padding:22px 24px 32px}
+.reference-preview .command-intro{margin-bottom:14px;padding-bottom:16px}
+.reference-preview .command-summary,
+.reference-preview .crew-roster,
+.reference-preview .command-board,
+.reference-preview .trend,
+.reference-preview .crew-context-panel,
+.reference-preview .crew-switcher-option,
+.reference-preview .crew-records,
+.reference-preview .notifications,
+.reference-preview .body-panel,
+.reference-preview .specialist{
+  border-radius:14px;
+  background-image:linear-gradient(135deg,var(--surface-glint),transparent 45%);
+  box-shadow:inset 0 1px 0 var(--surface-glint),0 5px 18px var(--surface-shade);
+}
+.reference-preview .command-overview{gap:14px}
+.reference-preview .mission-grid.command-grid{gap:14px}
+.reference-preview .crew-roster{top:88px}
+.reference-preview .roster-heading{padding:15px 16px 12px}
+.reference-preview .crew-roster-row{padding:12px 10px}
+.reference-preview .roster-note{padding:11px 16px}
+.reference-preview .command-board{padding:18px;gap:16px}
+.reference-preview .crew-focus-heading{padding-bottom:16px}
+.reference-preview .crew-initials{border-radius:50%;box-shadow:inset 0 1px 0 var(--surface-glint)}
+.reference-preview .detail-link,
+.reference-preview .compose-button,
+.reference-preview .directory-link{border-radius:999px;box-shadow:inset 0 1px 0 var(--surface-glint)}
+.reference-preview .detail-link>svg,
+.reference-preview .text-link>svg{
+  width:24px;height:24px;padding:5px;border:1px solid var(--edge);border-radius:50%;
+}
+.reference-preview .signal-tile{position:relative;min-width:0}
+.reference-preview .crew-secondary-signal{
+  position:relative;width:100%;height:100%;min-height:108px;padding:14px;
+  border-radius:14px;gap:10px;
+  background:linear-gradient(135deg,var(--surface-glint),transparent 65%),var(--panel);
+  box-shadow:inset 0 1px 0 var(--surface-glint);
+}
+.reference-preview .crew-secondary-signal>span:first-child{line-height:1.4}
+.reference-preview .crew-secondary-signal>span:first-child>svg{
+  box-sizing:content-box;padding:6px;border:1px solid var(--edge);border-radius:50%;
+  background:var(--surface-glint);
+}
+.reference-preview .crew-secondary-signal>.signal-tile-footer{
+  padding-top:9px;border-top:1px solid var(--edge);color:var(--muted);font-size:9px;
+}
+.reference-preview .focus-content{gap:14px}
+.reference-preview .trend{padding:14px}
+.reference-preview .detailed-plot{height:200px}
+.reference-preview .plot polyline{stroke-linecap:round}
+.reference-preview .crew-context-panel{padding:14px}
+.reference-preview .context-heading{margin-bottom:8px}
+.reference-preview .compact-readings button{padding:8px 0}
+.reference-preview .notification-dismiss{
+  border-radius:50%;background:var(--surface-glint);border-color:var(--edge);
+}
+.reference-preview .body-panel .body-grid{
+  grid-template-columns:minmax(120px,.7fr) minmax(0,1fr);gap:14px;align-items:center;
+}
+.reference-preview .body-panel .signal-list{
+  max-height:340px;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;padding:3px;
+}
+.reference-preview .body-panel .body-grid .signal-list{grid-template-columns:repeat(2,minmax(0,1fr))}
+.reference-preview .body-panel .signal-list button{border-radius:10px}
+.reference-preview .body-legend{margin-top:10px;padding-top:10px}
+.reference-preview .crew-switcher-option{min-height:90px;padding:12px 10px}
+.reference-preview .review-form .crew-switcher-option{min-height:90px;padding:12px 10px}
+@media(hover:hover) and (prefers-reduced-motion:no-preference){
+  .reference-preview .signal-tile,
+  .reference-preview .crew-switcher-option,
+  .reference-preview .refresh{transition:transform .16s ease,box-shadow .16s ease}
+  .reference-preview .signal-tile:hover,
+  .reference-preview .crew-switcher-option:hover{transform:translateY(-2px);box-shadow:0 7px 16px var(--surface-shade)}
+  .reference-preview .refresh:hover{transform:translateY(-1px)}
+}
+@media(max-width:1200px){
+  .reference-preview .app-navbar{gap:14px;padding:12px 18px}
+  .reference-preview .section-nav button{padding:8px 10px}
+  .reference-preview .source{max-width:120px;font-size:9px}
+  .reference-preview .mission-grid.command-grid{grid-template-columns:240px minmax(0,1fr)}
+}
+@media(max-width:1050px){
+  .reference-preview .app-navbar{grid-template-columns:1fr auto;gap:10px;min-height:0}
+  .reference-preview .section-nav{grid-row:2;grid-column:1/-1;justify-content:flex-start}
+  .reference-preview .section-nav button{flex:1}
+  .reference-preview .crew-roster{top:126px}
+}
+@media(max-width:950px){
+  .reference-preview .mission-grid.command-grid{grid-template-columns:minmax(0,1fr)}
+  .reference-preview .crew-roster{position:static}
+  .reference-preview .command-board{padding:14px}
+}
+@media(max-width:600px){
+  .reference-preview .app-navbar{padding:10px 12px;gap:9px}
+  .reference-preview .brand{font-size:11px;gap:8px}
+  .reference-preview .logo{width:30px;height:30px}
+  .reference-preview .header-actions{gap:5px}
+  .reference-preview .source{max-width:95px;padding:5px 7px;font-size:8px}
+  .reference-preview .refresh{min-width:36px;min-height:36px}
+  .reference-preview .section-nav{gap:4px}
+  .reference-preview .section-nav button{flex-direction:column;gap:5px;padding:8px 3px;font-size:9px;min-height:52px;border-radius:12px}
+  .reference-preview .section-nav button[aria-current=page]{border-radius:12px}
+  .reference-preview .section-nav button:has(.notification-count){position:relative}
+  .reference-preview .notification-count{position:absolute;right:2px;top:0;min-width:14px;font-size:8px}
+  .reference-preview>main{padding:16px 12px 24px}
+  .reference-preview .command-intro{align-items:flex-start}
+  .reference-preview .command-board{padding:12px;gap:14px}
+  .reference-preview .crew-secondary-signal{padding:12px;min-height:106px}
+  .reference-preview .crew-secondary-signal>span:first-child{gap:5px;font-size:10px}
+  .reference-preview .crew-secondary-signal>span:first-child>svg{padding:4px;width:12px;height:12px}
+  .reference-preview .trend{padding:12px}
+  .reference-preview .detailed-plot{height:190px}
+  .reference-preview .body-panel .body-grid{grid-template-columns:minmax(0,1fr);gap:10px}
+  .reference-preview .body-panel .signal-list{max-height:230px}
+  .reference-preview .crew-switcher-option,
+  .reference-preview .review-form .crew-switcher-option{min-height:86px;padding:11px 9px}
+}

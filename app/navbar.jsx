@@ -1,7 +1,7 @@
 import {Bell, CalendarDays, ClipboardList, LayoutDashboard, LogOut, Orbit, Radio, RefreshCw, Users} from 'lucide-react';
 
 export const sections = {
-  overview:{label:'Overview', tag:'Crew averages & recommendations', title:'Crew health overview', icon:LayoutDashboard},
+  overview:{label:'Overview', tag:'Live signals. One crew. One view.', title:'Crew overview', icon:LayoutDashboard},
   astronauts:{label:'Astronauts', tag:'Profiles & telemetry', title:'Astronaut telemetry', icon:Users},
   specialist:{label:'Specialist', tag:'Detailed readings & reviews', title:'Specialist workspace', icon:ClipboardList},
   notifications:{label:'Notifications', title:'Notifications', icon:Bell},
