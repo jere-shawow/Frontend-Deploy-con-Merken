@@ -1,5 +1,21 @@
 # Orbit Crew Health
 
+## DynamoDB backend local
+
+Para `../merken-api`, usa `MERKEN_TELEMETRY_URL=http://127.0.0.1:4000` en
+`.env.local`. `/api/dashboard` consulta el roster y las mediciones paginadas de
+Merken. El servicio anterior `/api/astronauts` se mantiene para el directorio.
+Las credenciales AWS pertenecen solamente al backend.
+
+Specialist incluye JSON reports: guarda el snapshot visible en el servidor,
+descarga JSON y permite reintentar subidas. El backend guarda primero en
+`data/reports/`. Para subir informes completos requiere la tabla separada
+`merken_reports`, con `astronaut_id` (S) y `report_id` (S), y la variable
+`DYNAMO_TABLE_REPORTS=merken_reports`. Mientras no exista o AWS falle, los
+informes permanecen locales y pendientes. No se mezclan con `health_records`.
+El historial local necesita almacenamiento persistente; los reintentos son manuales.
+Consulta el README del backend para el template, permisos y límites.
+
 Next.js dashboard for astronaut telemetry. The app starts with synthetic demo data.
 
 ## Local development on Windows

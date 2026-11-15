@@ -4,6 +4,7 @@ import {useEffect,useState} from 'react';
 import {ClipboardList, FilePlus2} from 'lucide-react';
 import {Trend} from './telemetry';
 import MerkenReviews from './merken-reviews';
+import Reports from './reports';
 
 const format = new Intl.NumberFormat('en-US', {maximumFractionDigits: 2});
 const labels = {normal:'Normal', warning:'Warning', critical:'Critical'};
@@ -113,6 +114,7 @@ export default function Specialist({person,source,scenario}) {
         <h3>Alert log</h3><AlertLog alerts={person.alerts ?? []}/>
       </section>
       {source==='backend'?<>
+        <Reports key={person.id} person={person}/>
         {annotation&&<div className="attached-reading">
           <span>Selected reading · {annotation.label} · {format.format(annotation.value)} {annotation.unit}</span>
           <button type="button" onClick={()=>setAnnotation(null)}>Remove</button>

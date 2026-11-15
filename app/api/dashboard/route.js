@@ -1,3 +1,4 @@
+import {loadMerkenTelemetry} from '../../../lib/merken-telemetry';
 export const dynamic = 'force-dynamic';
 
 const fields = [
@@ -14,6 +15,15 @@ const fields = [
 ];
 
 export async function GET() {
+  const telemetry = process.env.MERKEN_TELEMETRY_URL;
+  if (telemetry) {
+    try {
+      return Response.json(await loadMerkenTelemetry(telemetry,process.env.MERKEN_TELEMETRY_TOKEN),
+        {headers:{'Cache-Control':'no-store'}});
+    } catch {
+      return Response.json({error:'Merken telemetry is unavailable.'},{status:502});
+    }
+  }
   const base=process.env.MERKEN_ASTRONAUTS_URL;
   if (!base) return Response.json({error:'Astronaut backend is not configured.'},{status:503});
   try {
