@@ -1,7 +1,8 @@
-import { Activity, ArrowUpRight, Moon, Radiation, Waves } from 'lucide-react';
-import { Trend } from './telemetry';
+import { Activity, ArrowUpRight, HeartPulse, Moon, Radiation, Waves } from 'lucide-react';
+import { metricState, states, Trend } from './telemetry';
 
 const signals = [
+  {id:'heart',label:'Heart rate',icon:HeartPulse,tone:'heart'},
   {id:'stress',label:'Stress',icon:Waves,tone:'pink'},
   {id:'sleep',label:'Sleep',icon:Moon,tone:'lavender'},
   {id:'radiation',label:'Space radiation',icon:Radiation,tone:'peach'},
@@ -33,14 +34,16 @@ export default function MissionOverview({crew,selected,demo,metricId,onMetric,on
     <div className="mission-board">
       <div className="mission-signals">{signals.map(({id,label,icon:Icon,tone},index)=>{
         const [, ,value,unit,samples]=metrics[index];
-        return <button type="button" className="panel mission-signal" data-tone={tone} key={id}
+        const status = metricState(metrics[index], selected.metricStatuses);
+        return <button type="button" className="panel mission-signal" data-tone={tone} data-status={status} key={id}
           aria-pressed={active[0]===id} onClick={()=>onMetric(id)}>
           <span className="signal-title"><i><Icon size={16}/></i>{label}</span>
           <strong>{value ?? 'No reading'} {value!=null&&<small>{unit}</small>}</strong>
+          <span className="reading-status"><i/>{states[status]}</span>
           <Sparkline samples={samples}/>
         </button>;
       })}</div>
-      <Trend key={selected.id+active[0]} metric={active} featured/>
+      <Trend key={selected.id+active[0]} metric={active} statuses={selected.metricStatuses} featured/>
       <section className="mission-alerts"><h2>Current warnings / alerts</h2>
         {alerts.length ? alerts.map(({person,alert},index)=><article className={'notice '+alert.level} key={person.id+':'+(alert.id??index)}>
           <Activity size={18}/><div><div className="notice-meta"><span>{alert.level}</span><time>{alert.time}</time></div>

@@ -1,11 +1,14 @@
 'use client';
-import { useEffect, useState } from 'react';
-import { Bell, CircleAlert, Lightbulb, TriangleAlert } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import Notifications from './notifications';
 import { BodyMap, Trend } from './telemetry';
 import Specialist from './specialist';
 import Overview from './overview';
 import MissionOverview from './mission-overview';
 import Navbar, { sections } from './navbar';
+import CrewRecords from './crew-records';
+import { useLocalState } from './use-local-state';
 
 import { simulateCrew, scenarioCount, scenarioLabel } from '../lib/simulation';
 
@@ -18,13 +21,25 @@ function ProfileFacts({person}) {
   </span>;
 }
 
-const alerts = {
-  critical:{label:'Critical', icon:CircleAlert}, warning:{label:'Warning',icon:TriangleAlert}, suggestion:{label:'Suggestion',icon:Lightbulb}
-};
+const severity = {critical:0, warning:1, suggestion:2};
+const demoLogin = process.env.NODE_ENV === 'development' || process.env.NEXT_PUBLIC_DEMO_LOGIN === 'true';
+
+function noticeKey(source, person, alert) {
+  return JSON.stringify([source, person.id, alert.id ?? [alert.level, alert.title, alert.time, alert.detail]]);
+}
+
 export default function Dashboard() {
+  const router = useRouter();
+  const [authenticated, setAuthenticated] = useState(!demoLogin);
+  const [dismissed, updateDismissed] = useLocalState('merken-dismissed-notifications-v1');
+  const [groundAlerts, updateGroundAlerts] = useLocalState('merken-ground-notifications-v1');
+  const [received, updateReceived] = useLocalState('merken-received-notifications-v1');
+  const [creatingAlert, setCreatingAlert] = useState(false);
+  const [dismissError, setDismissError] = useState('');
+  const request = useRef(null);
   const [section,setSection] = useState('overview');
   const current = sections[section];
-  const [overviewMetric,setOverviewMetric] = useState('stress');
+  const [overviewMetric,setOverviewMetric] = useState('heart');
   function openAstronaut(id) {
     selectCrew(id); selectMetric(''); setFilter('all'); setSection('astronauts');
   }
@@ -39,17 +54,43 @@ export default function Dashboard() {
     const timer = setInterval(() => setPhase(current => (current + 1) % scenarioCount), 6000);
     return () => clearInterval(timer);
   },[demoMode,running]);
-  async function load() {
-    setBusy(true); setError('');
+  useEffect(() => {
+    if (!demoLogin) return;
+    if (sessionStorage.getItem('merken-demo-session') === '1') setAuthenticated(true);
+    else router.replace('/login');
+  }, [router]);
+  async function load({ quiet = false } = {}) {
+    if (request.current) return;
+    const controller = new AbortController();
+    request.current = controller;
+    if (!quiet) setBusy(true);
     try {
-      const response=await fetch('/api/dashboard',{cache:'no-store'});
+      const response=await fetch('/api/dashboard',{cache:'no-store', signal:controller.signal});
       if(!response.ok) throw new Error();
-      setData(await response.json());
-    } catch { setError('Crew telemetry is temporarily unavailable.'); }
-    finally { setBusy(false); }
+      const payload = await response.json();
+      if (controller.signal.aborted) return;
+      setData(payload);
+      setError('');
+    } catch {
+      if (!controller.signal.aborted) setError('Crew telemetry is temporarily unavailable.');
+    } finally {
+      if (request.current === controller) {
+        request.current = null;
+        setBusy(false);
+      }
+    }
   }
-  useEffect(()=>{load();},[]);
-  const crew=demoMode ? simulateCrew(data.crew, phase) : (data?.crew ?? []);
+  useEffect(() => {
+    if (!authenticated) return;
+    load();
+    const timer = setInterval(() => load({ quiet: true }), 60000);
+    return () => {
+      clearInterval(timer);
+      request.current?.abort();
+      request.current = null;
+    };
+  }, [authenticated]);
+  const crew = useMemo(() => demoMode ? simulateCrew(data.crew, phase) : (data?.crew ?? []), [data, demoMode, phase]);
   const selected=crew.find(person=>person.id===crewId) ?? crew[0];
   const metrics = selected?.metrics ?? [];
   const metric = metrics.find(item => item[0] === metricId)
@@ -57,15 +98,80 @@ export default function Dashboard() {
     ?? metrics.find(item => selected.metricStatuses?.[item[0]] === 'warning')
     ?? metrics.find(item => item[0] === 'heart')
     ?? metrics[0];
-  const notices=selected?.alerts ?? [];
-  const severity = {critical:0, warning:1, suggestion:2};
-  const visible=notices.filter(item=>filter==='all'||item.level===filter)
-    .sort((a,b)=>(severity[a.level]??3)-(severity[b.level]??3));
+  const dismissedKeys = new Set(dismissed ?? []);
+  const source = data?.upstreamSimulation ? 'merken-test' : data?.source;
+  useEffect(() => {
+    if (!received || !source) return;
+    const known = new Set(received.map(item => item.key));
+    const incoming = crew.flatMap(person => (person.alerts ?? []).map(alert => ({
+      source, crewId: person.id, alert, key: noticeKey(source, person, alert),
+    }))).filter(item => !known.has(item.key));
+    if (!incoming.length) return;
+    try {
+      updateReceived(current => [...new Map([...current, ...incoming].map(item => [item.key, item])).values()]);
+    } catch {
+      setDismissError('Could not keep notification history in this browser.');
+    }
+  }, [crew, received, source]);
+
+  const notificationCrew = crew.map(person => {
+    const local = (groundAlerts ?? []).filter(alert => alert.source === source && alert.crewId === person.id);
+    return { ...person, alerts: [...(person.alerts ?? []), ...local].filter(alert =>
+      !dismissedKeys.has(noticeKey(source, person, alert))) };
+  });
+  const currentNotices = notificationCrew.flatMap(person => person.alerts.map(alert => {
+    const key = noticeKey(source, person, alert);
+    return [key, { person, alert, key }];
+  }));
+  const savedNotices = (received ?? []).flatMap(({source: savedSource, crewId, alert, key}) => {
+    const person = crew.find(member => member.id === crewId);
+    return savedSource === source && person && !dismissedKeys.has(key) ? [[key, { person, alert, key }]] : [];
+  });
+  const notifications = [...new Map([...savedNotices, ...currentNotices]).values()];
+  const visible = notifications.filter(({alert}) => filter === 'all' || alert.level === filter)
+    .sort((a,b) => (severity[a.alert.level] ?? 3) - (severity[b.alert.level] ?? 3));
+
+  function dismiss(key) {
+    try {
+      updateDismissed(current => current.includes(key) ? current : [...current, key]);
+      setDismissError('');
+    } catch {
+      setDismissError('Could not dismiss this notification in this browser.');
+    }
+  }
+  function createAlert(event) {
+    event.preventDefault();
+    const form = new FormData(event.currentTarget);
+    const crewId = form.get('crewId');
+    const title = form.get('title').trim();
+    const detail = form.get('detail').trim();
+    if (!title || !detail || !crew.some(person => person.id === crewId)) {
+      setDismissError('Choose a crew member and enter a title and a message.');
+      return;
+    }
+    const alert = { id: 'ground-' + crypto.randomUUID(), source, crewId, title, detail, level: 'suggestion',
+      time: new Date().toISOString() };
+    try {
+      updateGroundAlerts(current => [alert, ...current]);
+      setCreatingAlert(false);
+      setFilter('all');
+      setDismissError('');
+    } catch {
+      setDismissError('Could not save the notification in this browser.');
+    }
+  }
+  if (!authenticated) return null;
   return <div className="mission-shell">
     <Navbar active={section} onSelect={setSection} busy={busy} onRefresh={load}
+      notificationCount={notifications.length}
+      onSignOut={demoLogin ? () => {
+        sessionStorage.removeItem('merken-demo-session');
+        setAuthenticated(false);
+        router.replace('/login');
+      } : undefined}
       sourceLabel={error ? 'Connection error' : demoMode ? 'Demo data' : data?.upstreamSimulation ? 'Merken test data · 24h' : data ? 'Backend connected' : 'Crew telemetry'}/>
     <main>
-      <div className="intro"><h1>{current.title}</h1><p>{current.tag}</p></div>
+      <div className="intro"><h1>{current.title}</h1>{current.tag && <p>{current.tag}</p>}</div>
       {error&&<p className="error" role="alert">{error}</p>}
       {busy&&!data&&<p className="muted" role="status">Loading crew telemetry…</p>}
       {data&&!crew.length&&<p className="muted">No crew members available.</p>}
@@ -73,11 +179,11 @@ export default function Dashboard() {
             <div><strong>Telemetry simulation</strong><span aria-live="polite">{scenarioLabel(phase)}</span></div>
             <div className="simulation-actions"><button onClick={()=>setRunning(!running)}>{running?'Pause':'Resume'}</button><button onClick={nextPhase}>Next scenario</button></div>
           </div>}
-      {!!crew.length&&section==='overview'&&<MissionOverview crew={crew} selected={selected} demo={demoMode} metricId={overviewMetric} onMetric={setOverviewMetric}
+      {!!crew.length&&section==='overview'&&<MissionOverview crew={notificationCrew} selected={selected} demo={demoMode} metricId={overviewMetric} onMetric={setOverviewMetric}
         onCrew={selectCrew} onDetails={openAstronaut} profile={<ProfileFacts person={selected}/>}>
         <details className="panel crew-summary"><summary>Crew averages &amp; recommendations</summary><Overview crew={crew} onSelect={openAstronaut}/></details>
       </MissionOverview>}
-      {!!crew.length&&section!=='overview'&&<div className="details">
+      {!!crew.length&&(section==='astronauts'||section==='specialist')&&<div className="details">
           <div className="selected-heading crew-toolbar">
             <div><h2>{selected.name}</h2><ProfileFacts person={selected}/></div>
             <label className="crew-picker">
@@ -93,19 +199,22 @@ export default function Dashboard() {
           </div>
           {section==='specialist' ? <Specialist key={data.source + ':' + selected.id} person={selected} source={data.source} scenario={demoMode ? scenarioLabel(phase) : undefined}/> : <>
           <div className="telemetry-focus"><BodyMap metrics={metrics} statuses={selected.metricStatuses} active={metric?.[0]} onSelect={selectMetric}/>
-          {metric?<Trend key={selected.id+metric[0]} metric={metric} featured/>:<p className="muted">No metrics available for this crew member.</p>}</div>
+          {metric?<Trend key={selected.id+metric[0]} metric={metric} statuses={selected.metricStatuses} featured/>:<p className="muted">No metrics available for this crew member.</p>}</div>
 
           {selected.metrics.length>1&&<section className="more-trends" aria-label="Additional metric trends">
             <h2>Additional trends</h2>
             <div className="trend-grid">
-              {selected.metrics.filter(item=>item[0]!==metric?.[0]).map(item=><Trend key={selected.id+item[0]} metric={item} compact/>)}
+              {selected.metrics.filter(item=>item[0]!==metric?.[0]).map(item=><Trend key={selected.id+item[0]} metric={item} statuses={selected.metricStatuses} compact/>)}
             </div>
           </section>}
-          <section className="panel notifications"><div className="panel-heading"><h2><Bell size={17}/> Notifications <span className="pill">{notices.length}</span></h2><label><span className="sr-only">Filter notifications</span><select value={filter} onChange={event=>setFilter(event.target.value)}><option value="all">All severities</option>{Object.entries(alerts).map(([key,item])=><option key={key} value={key}>{item.label} ({notices.filter(alert=>alert.level===key).length})</option>)}</select></label></div>
-            {visible.length?visible.map((alert,index)=>{const style=alerts[alert.level] ?? alerts.suggestion; const Icon=style.icon; return <article className={'notice '+alert.level} key={alert.id??index}><Icon size={18}/><div><div className="notice-meta"><span>{style.label}</span><time>{alert.time}</time></div><h3>{alert.title}</h3><p>{alert.detail}</p>{alert.recommendation&&<div className="recommendation"><strong>Recommended action</strong><p>{alert.recommendation}</p></div>}</div></article>}):<p className="muted">No notifications for this selection.</p>}
-          </section>
           </>}
       </div>}
+      {section==='notifications' && <Notifications notifications={notifications} visible={visible}
+        crew={crew} selected={selected} filter={filter} onFilter={setFilter}
+        creating={creatingAlert} onToggleCreate={() => setCreatingAlert(!creatingAlert)} onCreate={createAlert}
+        canCreate={!!crew.length && !!groundAlerts} canDismiss={!!dismissed} error={dismissError}
+        onDismiss={dismiss} onCrew={openAstronaut}/>}
+      <CrewRecords active={section==='records'} crew={crew} selected={selected} onCrew={selectCrew} source={source} fresh={!!data && !error}/>
     </main>
   </div>;
 }

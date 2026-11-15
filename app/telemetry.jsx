@@ -1,5 +1,6 @@
 import {useId,useState} from 'react';
-import {Activity, HeartPulse, Wind, Moon, Waves, Footprints} from 'lucide-react';
+import { readingWindow } from '../lib/reading-window';
+import {Activity, ArrowDownRight, ArrowRight, ArrowUpRight, HeartPulse, Wind, Moon, Waves, Footprints} from 'lucide-react';
 
 const regions = {
   sleep: [50, 11, Moon],
@@ -10,14 +11,14 @@ const regions = {
   steps: [55, 77, Footprints],
 };
 
-const states = {
+export const states = {
   normal: 'Normal',
   warning: 'Warning',
   critical: 'Critical',
   unknown: 'Not assessed',
 };
 
-function metricState(metric, statuses) {
+export function metricState(metric, statuses) {
   const [key, , value] = metric;
   const status = statuses?.[key];
   return value != null && Object.hasOwn(states, status) ? status : 'unknown';
@@ -83,27 +84,29 @@ export function BodyMap({metrics, statuses, active, onSelect}) {
 
 
 const number = new Intl.NumberFormat('en-US',{maximumFractionDigits:2});
-export function Trend({metric, compact=false, featured=false, onSelectReading, selectedReading}) {
+export function Trend({metric, statuses, compact=false, featured=false, onSelectReading, selectedReading}) {
   const [metricId,label,value,unit,samples]=metric;
   const gradient=useId();
   const [limit,setLimit]=useState(14);
   const [reading,setReading]=useState(null);
-  const series=Array.isArray(samples)?samples.filter(Number.isFinite):[];
-  const points=limit?series.slice(-limit):series;
-  const offset=series.length-points.length;
+  const {points, offset, period} = readingWindow(samples, metric[6], limit);
   const min=Math.min(...points), max=Math.max(...points);
   const mean=points.reduce((total,point)=>total+point,0)/points.length;
   const delta=points.at(-1)-points[0];
+  const status = metricState(metric, statuses);
+  const Direction = delta < 0 ? ArrowDownRight : delta > 0 ? ArrowUpRight : ArrowRight;
   const pad=(max-min)*.18||1;
   const low=min-pad, high=max+pad;
   const x=index=>58+index*552/Math.max(points.length-1,1);
   const y=val=>20+(high-val)/(high-low)*160;
   const line=points.map((val,i)=>x(i)+','+y(val)).join(' ');
-  return <section className={compact?"panel trend compact-trend":"panel trend"} aria-label="Telemetry trend">
-    <div className="panel-heading"><div><div className="eyebrow">{featured?"PRIMARY TREND":"TELEMETRY TREND"}</div><h2>{label}</h2></div><label className="pill">Range <select value={limit} onChange={e=>{setLimit(Number(e.target.value));setReading(null);}}><option value={7}>Last 7</option><option value={14}>Last 14</option><option value={0}>All readings</option></select></label></div>
+  return <section className={compact?"panel trend compact-trend":"panel trend"} data-status={status} aria-label={label + ' trend'}>
+    <div className="panel-heading"><div><div className="eyebrow">{featured?"PRIMARY TREND":"TELEMETRY TREND"}</div><h2>{label}</h2></div><label className="trend-window">Show <select value={limit} onChange={e=>{setLimit(Number(e.target.value));setReading(null);}}><option value={7}>Last 7 readings</option><option value={14}>Last 14 readings</option><option value={0}>All readings</option></select></label></div>
+    {points.length > 0 && <p className="trend-period">{points.length} readings · {period}</p>}
     <div className="trend-summary">
-      <div><span>Current</span><strong>{value ?? '—'} <small>{unit}</small></strong></div>
-      {points.length>0&&[['Minimum',min],['Average',mean],['Maximum',max],['Window change',delta]].map(([name,val])=><div key={name}><span>{name}</span><strong>{name==='Window change'&&val>0?'+':''}{number.format(val)} <small>{unit}</small></strong></div>)}
+      <div className="trend-current"><span>Current</span><strong>{value ?? 'No reading'} <small>{unit}</small></strong><span className="reading-status"><i/>{states[status]}</span></div>
+      {points.length>0&&[['Minimum',min],['Average',mean],['Maximum',max]].map(([name,val])=><div key={name}><span>{name}</span><strong>{number.format(val)} <small>{unit}</small></strong></div>)}
+      {points.length>1 && <div className="trend-change"><span>{delta < 0 ? 'Falling' : delta > 0 ? 'Rising' : 'Unchanged'}</span><strong><Direction size={16} aria-hidden="true"/>{delta > 0 ? '+' : ''}{number.format(delta)} <small>{unit}</small></strong></div>}
     </div>
     {points.length>0?<><svg className="plot detailed-plot" viewBox="0 0 632 216" role={onSelectReading?"group":"img"} aria-label={label+' trend in '+unit}>
       <defs><linearGradient id={gradient} x2="0" y2="100%"><stop stopColor="var(--chart-color, #8cc1cb)" stopOpacity=".25"/><stop offset="1" stopColor="var(--chart-color, #8cc1cb)" stopOpacity="0"/></linearGradient></defs>

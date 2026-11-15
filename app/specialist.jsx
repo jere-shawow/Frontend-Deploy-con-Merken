@@ -102,7 +102,7 @@ export default function Specialist({person,source,scenario}) {
           {person.metrics.map(([id,label])=><option key={id} value={id}>{label}</option>)}
         </select></label>
         <p className="muted">Select a chart point to attach it to your note or warning.</p>
-        <Trend key={metric[0]} metric={metric} onSelectReading={selectReading}
+        <Trend key={metric[0]} metric={metric} statuses={person.metricStatuses} onSelectReading={selectReading}
           selectedReading={annotation?.metricId===metric[0]&&annotation.scenario===scenario?annotation:null}/>
       </section>}
       <section>

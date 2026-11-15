@@ -11,23 +11,31 @@ npm ci
 npm run dev -- --port 3001
 ```
 
-Open http://localhost:3001. Select a crew member, select a metric, and filter alerts by severity. Press Ctrl+C to stop the server.
+Open http://localhost:3001. The development login accepts any non-empty username and password. It opens the dashboard using a browser session flag for the pitch. Press Ctrl+C to stop the server.
 
 
 ## Backend handoff
 
 Set `DASHBOARD_BACKEND_URL` in `.env.local` for Next.js development or in the server environment. It must point to the backend's full dashboard GET URL. Next.js fetches it server-side through `/api/dashboard`. A configured backend failure appears in the UI. Demo mode is available when the URL is unset.
 
-Use the object in `lib/demo.js` as the response example. The backend returns `{ "crew": [...] }`. Each crew member has `id`, `name`, `role`, `initials`, `metrics`, and `alerts` arrays. Metric entries are `[id, label, currentValue, unit, numericReadingsOldestFirst]`. Alerts include `level` (critical, warning, or suggestion), `title`, `detail`, `recommendation`, and `time`. Return empty arrays when the respective data is unavailable.
+Use the object in `lib/demo.js` as the response example. The backend returns `{ "crew": [...] }`. Each crew member has `id`, `name`, `role`, `initials`, `metrics`, and `alerts` arrays. Metric entries are `[id, label, currentValue, unit, numericReadingsOldestFirst, recordIds?, measuredAtTimestamps?]`. Alerts include `level` (critical, warning, or suggestion), `title`, `detail`, `recommendation`, and `time`. Provide a stable `id` per alert event so a dismissed alert stays dismissed after refresh. Return empty arrays when the respective data is unavailable.
 
 Garmin ingestion, anomaly detection, and Amazon Nova inference through Amazon Bedrock belong to the team's backend. Return reviewed alert text and recommendations in the same response. The frontend requires zero AWS credentials. Demo alerts are illustrative.
 
 ## Future EC2 deployment
 
-The Dockerfile and Compose file are for this stage. From the project directory on the EC2 instance, run `sudo docker compose up --build -d`. Compose builds the image for the host architecture, including ARM64. On EC2, add the dashboard service to the backend's Docker network and set the URL to the backend service name and container port. To join an existing network, declare it as external in a Compose override and attach the dashboard service to it. Keep host port 3001 for this app if Grafana already uses 3000. Use an SSH tunnel or an authenticated reverse proxy to access the app.
+Deploy through `.github/workflows/frontend.yml`: pushes to `main` build and smoke-test the ARM64 Docker image, then deploy that tested image through the production runner when `EC2_DEPLOY_ENABLED=true`. See `deploy/README.md` for runner setup, runtime configuration and rollback. Production uses container port 3000, loopback host port 3001 and the external `merken` network.
 The optional crew-level `metricStatuses` object maps metric IDs to `normal`, `warning`, or `critical`. The body map shows `Not assessed` when a metric or its assessment is unavailable. Demo statuses are illustrative; live statuses must come from the backend.
 
-Crew profiles accept optional numeric `weightKg` and `heightCm`. Stress is read from the `stress` metric. The demo runs a four-stage telemetry simulation every six seconds; use Pause or Next scenario to inspect changes.
+Crew profiles accept optional numeric `weightKg` and `heightCm`. Stress is read from the `stress` metric. The demo advances its telemetry simulation every six seconds. Use Pause or Next scenario to try the falling heart rate alert.
+
+The dashboard refreshes telemetry once a minute while open. Notifications aggregates upstream alerts by astronaut, with priority filters and per-alert dismissal. Operator-created advisories and dismissals are stored in the current browser; they are not delivered to the mobile app. To try a local notification, choose New advisory and select a crew member.
+
+Chart windows count readings: Last 7 readings, Last 14 readings or All readings. When matching measurement timestamps are available, the chart also shows the actual elapsed minutes, hours or days and the UTC endpoints. Without timestamps, it explicitly reports that a time interval is unavailable. The horizontal axis is the reading sequence, not elapsed time.
+
+The dashboard adapts to desktop, tablet and phone widths, with horizontal navigation on small screens and scrolling confined to detailed telemetry tables. Validate the reading-window logic with `node --test lib/reading-window.test.mjs` and the production build with `npm run build`.
+
+Records saves one automatic snapshot per astronaut and UTC day while the dashboard is open. Generate record saves an additional manual snapshot. Metrics with sample timestamps include today's readings. Metrics without timestamps show the latest available value. Records are stored in the current browser, scoped to the telemetry source and astronaut.
 
 ## Specialist workspace
 
