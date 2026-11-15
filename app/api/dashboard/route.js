@@ -5,6 +5,17 @@ const observedHistory = new Map();
 
 export async function GET() {
   const base=process.env.MERKEN_ASTRONAUTS_URL;
+  const telemetry = process.env.MERKEN_TELEMETRY_URL;
+  if (!base && telemetry) {
+    try {
+      const data = await loadMerkenTelemetry(telemetry,process.env.MERKEN_TELEMETRY_TOKEN);
+      return Response.json({...data, observedAt:new Date().toISOString(), crew:data.crew.map(person => ({...person,
+        telemetrySource:data.upstreamSimulation ? 'simulation' : 'backend',
+        historySource:data.upstreamSimulation ? 'simulator' : 'backend'}))}, {headers:{'Cache-Control':'no-store'}});
+    } catch {
+      return Response.json({error:'Merken telemetry is unavailable.'},{status:502});
+    }
+  }
   if (!base && process.env.NODE_ENV === 'development') {
     const {demo} = await import('../../../lib/demo');
     return Response.json(demo, {headers:{'Cache-Control':'no-store'}});
@@ -19,7 +30,7 @@ export async function GET() {
     const rows=await response.json();
     if (!Array.isArray(rows)) throw new Error('Expected astronaut list');
     let simulatedCrew = [], telemetryWarning;
-    if (process.env.MERKEN_TELEMETRY_URL && process.env.MERKEN_TELEMETRY_TOKEN) {
+    if (telemetry) {
       try {
         const telemetry = await loadMerkenTelemetry(process.env.MERKEN_TELEMETRY_URL, process.env.MERKEN_TELEMETRY_TOKEN);
         if (telemetry.upstreamSimulation) simulatedCrew = telemetry.crew;
