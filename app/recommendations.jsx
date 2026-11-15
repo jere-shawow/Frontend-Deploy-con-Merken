@@ -1,48 +1,51 @@
 'use client';
 import {useEffect,useRef,useState} from 'react';
 
-// Additive panel only: existing dashboard layout, colors and typography are retained.
+const sources={
+  'nasa-sleep':['NASA sleep and mission performance','https://www.nasa.gov/reference/risk-from-inadequate-sleep-and-irregular-schedules/'],
+  'nasa-exercise':['NASA astronaut exercise','https://www.nasa.gov/missions/station/iss-research/astronaut-exercise/'],
+  'csa-leisure':['CSA life and leisure in space','https://www.asc-csa.gc.ca/eng/astronauts/living-in-space/relaxing-in-space.asp'],
+  'jaxa-life':['JAXA life on the ISS','https://humans-in-space.jaxa.jp/en/life/health-in-space/life/'],
+};
 export default function Recommendations({person}) {
-  const [busy,setBusy]=useState(false),[result,setResult]=useState(null),[error,setError]=useState('');
+  const [busy,setBusy]=useState(false),[result,setResult]=useState(null),[snapshot,setSnapshot]=useState(null),[error,setError]=useState('');
   const active=useRef(null);
   useEffect(()=>()=>active.current?.abort(),[]);
   const supported=/^\d{1,18}$/.test(String(person.id));
   async function generate() {
-    if (active.current) return;
-    const controller=new AbortController();active.current=controller;
-    setBusy(true);setError('');setResult(null);
+    if(active.current)return;
+    const controller=new AbortController();active.current=controller;setBusy(true);setError('');setResult(null);setSnapshot(null);
+    const url='/api/astronauts/'+encodeURIComponent(person.id)+'/recommendations';
     try {
-      const response=await fetch('/api/astronauts/'+encodeURIComponent(person.id)+'/recommendations',{
-        method:'POST',cache:'no-store',signal:controller.signal,
-        headers:{'Content-Type':'application/json'},body:JSON.stringify({allowRemoteAnalysis:true}),
-      });
+      const context=await fetch(url,{cache:'no-store',signal:controller.signal});
+      if(context.ok&&!controller.signal.aborted)setSnapshot(await context.json());
+      const response=await fetch(url,{method:'POST',cache:'no-store',signal:controller.signal,
+        headers:{'Content-Type':'application/json'},body:JSON.stringify({allowRemoteAnalysis:true})});
       const body=await response.json();
-      if(!response.ok) throw new Error(body.error||'Recommendations are unavailable.');
+      if(!response.ok)throw new Error(body.error||'Recommendations are temporarily unavailable.');
       if(!controller.signal.aborted)setResult(body);
-    } catch(e) { if(!controller.signal.aborted)setError(e.message||'Recommendations are unavailable.'); }
-    finally { if(active.current===controller){active.current=null;setBusy(false);} }
+    } catch(e){if(!controller.signal.aborted)setError(e.message||'Recommendations are temporarily unavailable.');}
+    finally{if(active.current===controller){active.current=null;setBusy(false);}}
   }
+  const context=result?.context??snapshot;
+  const refs=(result?.narrative?.sourceIds??[]).filter(id=>sources[id]);
   return <section className="panel" aria-label="Astronaut recommendations">
     <h2>Recommendations</h2>
-    <p className="muted">Generate an English ground-station summary for {person.name} using the latest stored backend metrics. This sends those metrics to Amazon Bedrock.</p>
-    <button type="button" onClick={generate} disabled={busy||!supported}>{busy?'Generating recommendations…':'Recommendations'}</button>
-    {!supported&&<p className="muted">Select a stored backend astronaut to generate recommendations.</p>}
+    <button type="button" onClick={generate} disabled={busy||!supported}>{busy?'Preparing your recommendations…':'Recommendations'}</button>
+    {!supported&&<p className="muted">Select a stored backend astronaut.</p>}
     <div aria-live="polite" aria-busy={busy}>
       {error&&<p role="alert">{error}</p>}
       {result&&<div className="specialist-content">
-        <p className="muted">{result.provider==='AWS_BEDROCK'?'Amazon Nova Pro':'Core-directed action'} · Generated {new Date(result.generatedAt).toLocaleString('en-US')} · Snapshot for {person.name}</p>
-        <h3>Astronaut status</h3><p>{result.narrative.summary}</p>
-        <p><strong>Core action:</strong> {result.context.coreAction.replaceAll('_',' ')} · <strong>Exercise clearance:</strong> {result.context.exerciseClearance}</p>
-        {!!result.context.existingAlerts?.length&&<div role="alert"><h3>Existing core alerts</h3><ul>{result.context.existingAlerts.map((a,i)=><li key={i}>{a}</li>)}</ul></div>}
-        {!!result.activities?.length&&<><h3>Recommended activities</h3><ul>{result.activities.map(a=><li key={a.id}>{a.recommendation} <small>Source: {a.sourceId}</small></li>)}</ul></>}
-        {!result.activities?.length&&<p>No activity recommendation was accepted for this snapshot. Follow the core-directed action.</p>}
-        <details><summary>Metric explanations</summary>{result.narrative.observations.map(o=><p key={o.metric}><strong>{o.metric.replaceAll('_',' ')}:</strong> {o.explanation}</p>)}</details>
-        <h3>Uncertainty</h3><ul>{result.narrative.uncertainties.map((u,i)=><li key={i}>{u}</li>)}</ul>
-        <details><summary>Measurements and provenance used</summary><div className="table-scroll"><table><thead><tr><th>Metric</th><th>Value</th><th>Source</th><th>Measured at</th></tr></thead><tbody>{result.context.readings.map(r=><tr key={r.metric}><td>{r.metric}</td><td>{r.value??'Unknown'} {r.unit}</td><td>{r.source}</td><td>{r.measuredAt??'Unknown'}</td></tr>)}</tbody></table></div></details>
-        <p className="muted">{result.disclaimer}</p>
-        <details><summary>Exercise options on a space mission</summary><p>Cycling, treadmill and resistance equipment may be part of a reviewed mission plan. These are reference options, not a personal exercise prescription. No intensity, duration or clearance is inferred from this snapshot.</p><a href="https://www.nasa.gov/missions/station/iss-research/astronaut-exercise/" target="_blank" rel="noreferrer">NASA exercise reference</a></details>
-        <p className="muted">A saved response describes this snapshot only. Press Recommendations again to request a new one.</p>
+        <p className="muted">{person.name} · {result.provider==='AWS_BEDROCK'?'Nova Pro':'Monitor guidance'} · {new Date(result.generatedAt).toLocaleString('en-US')}</p>
+        {result.narrative.summary.split(/\n+/).filter(Boolean).map((paragraph,i)=><p key={i}>{paragraph}</p>)}
+        {!!refs.length&&<p className="muted">References: {refs.map((id,i)=><span key={id}>{i>0?' · ':''}<a href={sources[id][1]} target="_blank" rel="noreferrer">{sources[id][0]}</a></span>)}</p>}
       </div>}
+      {context&&<details><summary>Snapshot details{context.existingAlerts?.length?' · monitor flags present':''}</summary>
+        <p className="muted">{context.readings.length} stored readings · {context.history?.length??0} saved snapshots. Simulation support; follow the current mission procedures.</p>
+        {!!context.existingAlerts?.length&&<><p>Existing monitor flags remain independent of the explanation:</p><ul>{context.existingAlerts.map((flag,i)=><li key={i}>{flag}</li>)}</ul></>}
+        {result?.narrative?.uncertainties?.map((item,i)=><p className="muted" key={i}>{item}</p>)}
+        <p className="muted">Generated from this snapshot. A later request may use updated data.</p>
+      </details>}
     </div>
   </section>;
 }
