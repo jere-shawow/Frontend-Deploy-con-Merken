@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Notifications from './notifications';
 import { BodyMap, Trend } from './telemetry';
 import Specialist from './specialist';
+import Recommendations from './recommendations';
 import CrewSwitcher from './crew-switcher';
 import {visibleCrew} from '../lib/crew-display';
 import MissionOverview from './mission-overview';
@@ -198,6 +199,7 @@ export default function Dashboard() {
           </details>}
           </>}
       </div>}
+      {!!crew.length&&['overview','astronauts','specialist'].includes(section)&&<Recommendations key={selected.id} person={selected}/>}
       {section==='notifications' && <Notifications notifications={notifications} visible={visible}
         crew={crew} selected={selected} filter={filter} onFilter={setFilter}
         creating={creatingAlert} onToggleCreate={() => setCreatingAlert(!creatingAlert)} onCreate={createAlert}
