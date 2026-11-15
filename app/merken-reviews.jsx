@@ -19,7 +19,7 @@ export default function MerkenReviews({person,annotation}) {
   async function request(path,options={}) {
     const response=await fetch(path,{...options,headers:{...options.headers,Authorization:'Bearer '+token.trim()},cache:'no-store'});
     const result=await response.json();
-    if (!response.ok) throw new Error(result.error || 'Merken request failed.');
+    if (!response.ok) throw new Error(result.error || 'Review request failed.');
     return result;
   }
 
@@ -42,7 +42,7 @@ export default function MerkenReviews({person,annotation}) {
     if (!summary.trim()) return;
     const reading=annotation?.recordId;
     if (!pending && annotation && !reading) {
-      setMessage('This chart point has no Merken record ID. Remove the attachment to save a general review.');
+      setMessage('This chart point has no backend record ID. Remove the attachment to save a general review.');
       return;
     }
     const operation=pending ?? {id:crypto.randomUUID(), body:{
@@ -62,15 +62,15 @@ export default function MerkenReviews({person,annotation}) {
       return;
     }
     setPending(null); setSummary(''); setFollowUp(''); setKind('routine');
-    setMessage('Review saved to Merken.');
+    setMessage('Review saved.');
     try { await readPage(null); }
-    catch { setMessage('Review saved to Merken. History could not be refreshed.'); }
+    catch { setMessage('Review saved. History could not be refreshed.'); }
     finally { setBusy(false); }
   }
 
   return <section>
-    <h3>Merken reviews</h3>
-    <p className="muted">Use a ground reviewer access token. Reviews are stored by Merken for this astronaut.</p>
+    <h3>Crew reviews</h3>
+    <p className="muted">Use a ground reviewer access token. Reviews are stored for this astronaut.</p>
     <div className="review-form">
       <label>Reviewer access token<input type="password" autoComplete="off" value={token} disabled={busy} onChange={event=>{
         setToken(event.target.value); setReviews([]); setCursor(null); setLoaded(false);
@@ -83,7 +83,7 @@ export default function MerkenReviews({person,annotation}) {
       </select></label>
       <label>Assessment<textarea required maxLength={4000} rows={4} value={summary} disabled={!!pending} onChange={event=>setSummary(event.target.value)}/></label>
       <label>Follow-up<textarea maxLength={500} rows={2} value={followUp} disabled={!!pending} onChange={event=>setFollowUp(event.target.value)}/></label>
-      <button disabled={!token.trim()||busy} type="submit">{pending?'Retry save':'Save to Merken'}</button>
+      <button disabled={!token.trim()||busy} type="submit">{pending?'Retry save':'Save review'}</button>
     </form>
     {message&&<p role="status" className="muted">{message}</p>}
     {loaded&&!reviews.length&&<p className="muted">{cursor?'No reviews on the loaded pages.':'No reviews found on the loaded pages.'}</p>}

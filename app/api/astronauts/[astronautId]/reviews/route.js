@@ -4,15 +4,15 @@ export const dynamic = 'force-dynamic';
 
 async function forward(request,context) {
   const {astronautId} = await context.params;
-  if (!uuid.test(astronautId)) return json({error:'A Merken astronaut ID is required.'},400);
+  if (!uuid.test(astronautId)) return json({error:'A backend astronaut ID is required.'},400);
   const token=request.headers.get('authorization');
-  if (!token?.startsWith('Bearer ')) return json({error:'A Merken reviewer access token is required.'},401);
+  if (!token?.startsWith('Bearer ')) return json({error:'A reviewer access token is required.'},401);
   const base=process.env.MERKEN_API_URL;
-  if (!base) return json({error:'Merken review storage is not configured.'},503);
+  if (!base) return json({error:'Review storage is not configured.'},503);
 
   try {
     const upstream = new URL('/v1/astronauts/'+astronautId+'/specialist-reviews',base);
-    if (upstream.protocol!=='https:') return json({error:'Merken review storage requires HTTPS.'},503);
+    if (upstream.protocol!=='https:') return json({error:'Review storage requires HTTPS.'},503);
     const headers={Authorization:token,Accept:'application/json'};
     const options={method:request.method,headers,cache:'no-store',redirect:'error',signal:AbortSignal.timeout(8000)};
     if (request.method==='POST') {
@@ -38,9 +38,9 @@ async function forward(request,context) {
     }
     const result=await fetch(upstream,options);
     if (!result.ok) {
-      const errors={401:'The reviewer session expired or the token is invalid.',403:'This account cannot access these reviews.',404:'Astronaut or referenced reading not found.',409:'Merken rejected a conflicting operation.'};
+      const errors={401:'The reviewer session expired or the token is invalid.',403:'This account cannot access these reviews.',404:'Astronaut or referenced reading not found.',409:'The review service rejected a conflicting operation.'};
       if (result.status in errors) return json({error:errors[result.status]},result.status);
-      return json({error:'Merken could not process the review request.'},result.status>=500?502:400);
+      return json({error:'The review service could not process the review request.'},result.status>=500?502:400);
     }
     if (request.method==='POST') return json({saved:true},result.status===201?201:200);
     const page=await result.json();
@@ -55,7 +55,7 @@ async function forward(request,context) {
       nextCursor:page.next_cursor??null,
     });
   } catch {
-    return json({error:'Merken review storage is temporarily unavailable.'},502);
+    return json({error:'Review storage is temporarily unavailable.'},502);
   }
 }
 export const GET = forward;

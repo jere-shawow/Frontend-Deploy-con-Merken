@@ -22,7 +22,7 @@ export default function Notifications({notifications, visible, crew, selected, f
   const [recipient,setRecipient] = useState(selected?.id ?? '');
   return <section className="panel notifications" aria-label="Crew notification center">
     <header className="notification-header">
-      <div><span className="eyebrow">MERKEN / COMMUNICATIONS</span><h2>Crew notifications</h2>
+      <div><span className="eyebrow">PULSYS / COMMUNICATIONS</span><h2>Crew notifications</h2>
         <p>Health alerts and mission advisories.</p></div>
       <button className="compose-button" disabled={!canCreate} aria-expanded={creating}
         aria-controls="notification-compose" onClick={onToggleCreate}>
@@ -64,6 +64,6 @@ export default function Notifications({notifications, visible, crew, selected, f
       </article>) : <div className="notification-empty"><Bell size={24}/><h3>{filter === 'all' ? 'No active notifications' : 'No ' + levels[filter].toLowerCase() + ' notifications'}</h3>
         <p>New crew updates will appear here.</p></div>}
     </div>
-    <footer className="notification-footer"><span>{visible.length} {visible.length === 1 ? 'notification' : 'notifications'}</span><span>MERKEN · MISSION CONTROL</span></footer>
+    <footer className="notification-footer"><span>{visible.length} {visible.length === 1 ? 'notification' : 'notifications'}</span><span>PULSYS · MISSION CONTROL</span></footer>
   </section>;
 }

@@ -10,7 +10,7 @@ export const sections = {
 
 export default function Navbar({active, onSelect, sourceLabel, busy, onRefresh, notificationCount, onSignOut}) {
   return <header className="app-navbar">
-    <div className="brand"><span className="logo"><Orbit size={23}/></span><div>MERKEN<span>MISSION CONTROL</span></div></div>
+    <div className="brand"><span className="logo"><Orbit size={23}/></span><div>PULSYS<span>MISSION CONTROL</span></div></div>
     <nav className="section-nav" aria-label="Dashboard navigation">
       {Object.entries(sections).map(([id,{label,tag,icon:Icon}])=><button key={id} type="button"
         aria-current={active===id?'page':undefined} onClick={()=>onSelect(id)}>

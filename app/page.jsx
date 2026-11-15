@@ -176,7 +176,7 @@ export default function Dashboard() {
       }}
       sourceLabel={error ? 'Connection error' : demoMode ? 'Demo data' : selected?.telemetrySource === 'garmin' ? 'Garmin linked' : selected?.telemetrySource === 'simulation' ? 'EC2 simulation' : data ? 'Backend connected' : 'Crew telemetry'}/>
     <main>
-      <div className="intro command-intro"><div><span className="eyebrow">MERKEN / MISSION CONTROL</span><h1>{current.title}</h1>{current.tag && <p>{current.tag}</p>}</div><a className="directory-link" href="/directory">Astronaut directory ↗</a></div>
+      <div className="intro command-intro"><div><span className="eyebrow">PULSYS / MISSION CONTROL</span><h1>{current.title}</h1>{current.tag && <p>{current.tag}</p>}</div><a className="directory-link" href="/directory">Astronaut directory ↗</a></div>
       {data?.healthWarning&&<p className="muted" role="status">{data.healthWarning}</p>}
       {error&&<p className="error" role="alert">{error}</p>}
       {data?.telemetryWarning && <p className="error" role="status">{data.telemetryWarning}</p>}

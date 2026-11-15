@@ -14,7 +14,7 @@ export async function GET() {
         telemetrySource:data.upstreamSimulation ? 'simulation' : 'backend',
         historySource:data.upstreamSimulation ? 'simulator' : 'backend'}))}, {headers:{'Cache-Control':'no-store'}});
     } catch {
-      return Response.json({error:'Merken telemetry is unavailable.'},{status:502});
+      return Response.json({error:'Crew telemetry is unavailable.'},{status:502});
     }
   }
   if (!base && process.env.NODE_ENV === 'development') {

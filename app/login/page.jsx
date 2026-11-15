@@ -5,7 +5,7 @@ export default async function Login({searchParams}) {
   return <main className="demo-login">
     <section className="panel">
       <div className="logo"><Orbit size={23}/></div>
-      <h1>Merken</h1>
+      <h1>PULSYS</h1>
       <p className="muted">Mission control · Demo access</p>
       <form action="/api/demo-session" method="post" className="review-form">
         <label>Username<input name="username" autoComplete="username" required/></label>
