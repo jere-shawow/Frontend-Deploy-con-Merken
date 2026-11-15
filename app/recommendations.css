@@ -1,0 +1,28 @@
+.recommendations-panel{margin-block:16px;overflow:hidden}
+.recommendations-header{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px 22px;border-bottom:1px solid var(--edge)}
+.recommendations-heading{display:flex;align-items:center;gap:12px;min-width:0}
+.recommendations-icon{display:grid;place-items:center;flex:0 0 40px;aspect-ratio:1;color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,transparent);border-radius:8px}
+.recommendations-heading h2{font-size:clamp(20px,3vw,26px);line-height:1.15}
+.recommendations-heading p{color:var(--muted);margin-top:4px;overflow-wrap:anywhere}
+.recommendation-generate{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 13px;min-height:44px;border:1px solid var(--accent);border-radius:7px;font:inherit;white-space:nowrap}
+.recommendations-content{display:grid;gap:14px;padding:16px 22px 20px}
+.recommendation-result{display:grid;gap:14px}
+.recommendation-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 14px;font-size:12px;color:var(--muted)}
+.recommendation-meta>span{color:var(--accent);font-weight:650}
+.recommendation-narrative{display:grid;gap:.85em;max-width:74ch;border-inline-start:2px solid var(--accent);padding-inline-start:15px;font-size:clamp(14px,1.4vw,17px);line-height:1.65;overflow-wrap:anywhere}
+.recommendation-sources h3{font-size:13px;margin-bottom:7px}
+.recommendation-sources ul{list-style:none;padding:0;margin:0;display:flex;gap:8px 14px;flex-wrap:wrap}
+.recommendation-sources a{display:inline-flex;align-items:center;gap:4px;color:var(--accent);font-size:12px;text-underline-offset:3px}
+.recommendation-context{border-top:1px solid var(--edge)}
+.recommendation-context summary{list-style:none;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:5px 12px;cursor:pointer;padding-block:10px;font-size:13px}
+.recommendation-context summary::-webkit-details-marker{display:none}
+.recommendation-context summary>span:first-child{display:inline-flex;align-items:center;gap:6px}
+.recommendation-context summary svg{transform:rotate(-90deg);transition:transform 150ms ease}
+.recommendation-context[open] summary svg{transform:rotate(0)}
+.recommendation-context-body{display:grid;gap:8px;font-size:13px}
+.recommendation-context-body ul{margin:0;padding-inline-start:22px}
+.recommendation-flags{color:var(--warn);font-size:12px}
+.recommendation-spinner{animation:recommendation-spin 1s linear infinite}
+@keyframes recommendation-spin{to{transform:rotate(360deg)}}
+@media(max-width:560px){.recommendations-header{align-items:flex-start;flex-direction:column}.recommendation-generate{width:100%}.recommendations-header,.recommendations-content{padding-inline:14px}}
+@media(prefers-reduced-motion:reduce){.recommendation-spinner{animation:none}.recommendation-context summary svg{transition:none}}
