@@ -1,16 +1,35 @@
-# EC2 deployment
+# frontend CI/CD through AWS Systems Manager
 
-GitHub Actions builds an ARM64 Docker image and checks the home page on pull requests and pushes to main. On main, the EC2 runner downloads the tested image, tags it with the commit SHA, and replaces only the frontend container. A failed HTTP check rolls back to the previous local image when available.
+Pull requests run CI only. Pushes to main and manual runs on main build and test
+an ARM64 image, then deploy the same image using SSM. AWS credentials come from
+GitHub OIDC; no SSH key, AWS access key or self-hosted runner is required.
 
-## One-time setup
+The shared AWS role MerkenGitHubSSMDeploy trusts only main in the two Merken
+repositories. Repository secrets: AWS_DEPLOY_ROLE_ARN, AWS_REGION,
+SSM_INSTANCE_ID, DEPLOY_ARTIFACT_BUCKET. These identify infrastructure and are
+not permanent credentials. Variable EC2_DEPLOY_ENABLED=true enables deployment.
 
-1. On the ARM64 EC2, install Docker Engine and Compose. Create the shared network with `sudo docker network create merken` if it does not exist. Attach the backend service to that external network via its Compose file and agree on its service name and internal port.
-2. Create `/docker/front-web` and grant the deployment runner account write access. The pipeline copies its Compose file to that directory. Create `/docker/front-web/runtime.env` with mode 600, owned by the deployment runner account. Configure `MERKEN_TELEMETRY_URL=http://merken-backend:8001` using the actual service name and port, and set `MERKEN_TELEMETRY_TOKEN`. Set `MERKEN_API_URL` to the HTTPS origin for specialist reviews once available. With a local reverse proxy, keep the backend network private. The telemetry token is loaded only at runtime.
-3. Register a repository-scoped Linux ARM64 self-hosted runner on EC2 with the custom label `merken-frontend` and install it as a service. The runner account needs access to Docker. Docker access grants host-level privileges. Use a dedicated account and restrict trusted changes to main. Pull request jobs run only on GitHub-hosted infrastructure.
-4. Create the GitHub Actions environment `production`, restrict deployments to main, and set repository variable `EC2_DEPLOY_ENABLED=true`. Run the workflow from main or push a change. The first deployment checks HTTP availability. Use the dashboard to verify live backend data separately.
+Images are encrypted in a private S3 bucket and expire after seven days. The
+host downloads with a temporary presigned URL, verifies SHA-256 and uses the
+root-owned /usr/local/sbin/merken-deploy script via Merken-DeployArtifact v2.
+This document is the only Run Command document authorized for the CI role.
 
-## Network
+The installed deployment script preserves the existing Compose file and runtime
+environment, saves the previous image and applies only an image override. A
+failed health check restores the previous image and marks the workflow failed.
+No database migration rollback is implied. Runtime passwords and existing tokens
+stay on the server and are never passed through GitHub or included in images.
+No docker prune, volume deletion or changes to other services are performed.
 
-- Keep frontend port 3001 bound to loopback. Container port 3000 and backend port 8001 are internal. The runner uses outbound HTTPS 443 to GitHub and requires no inbound port for CI/CD.
-- For browser access, place an authenticated HTTPS reverse proxy in front of `127.0.0.1:3001`. Allow inbound TCP 443 from the intended client ranges. Allow TCP 80 only if the chosen proxy uses an HTTP redirect or HTTP certificate challenge.
-- For private access via an SSH tunnel, allow TCP 22 only from the administrators' IP ranges and forward 3001. Avoid exposing 3000, 3001, 8001, or database ports in the EC2 security group.
+Host script source: ssm-host.sh. Install updates deliberately as root after
+review; changing this copy alone does not update the privileged host script.
+Concurrent deployments are serialized by GitHub and a host lock. Image/release
+cleanup is a separate manual task; monitor free disk space.
+
+Frontend: /docker/front-web, project merken-frontend, service dashboard, port
+127.0.0.1:3001, health /login. Backend: /home/ec2-user/backend, project backend,
+service backend, existing port binding preserved, health /healthz.
+
+The frontend EC2 role has only AmazonSSMManagedInstanceCore. The backend role
+retains SSM and limited Amazon Nova Pro invocation. Bedrock is for the ground
+backend; Android SLM inference remains offline.

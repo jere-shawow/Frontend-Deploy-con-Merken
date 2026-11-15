@@ -1,8 +1,8 @@
-import { Activity, ArrowUpRight, Moon, Radiation, Waves } from 'lucide-react';
+import { Activity, ArrowUpRight, HeartPulse, Moon, Radiation } from 'lucide-react';
 import { Trend } from './telemetry';
 
 const signals = [
-  {id:'stress',label:'Stress',icon:Waves,tone:'pink'},
+  {id:'heart',label:'Heart rate',icon:HeartPulse,tone:'pink'},
   {id:'sleep',label:'Sleep',icon:Moon,tone:'lavender'},
   {id:'radiation',label:'Space radiation',icon:Radiation,tone:'peach'},
 ];
