@@ -4,3 +4,63 @@
 .garmin-dialog{width:min(28rem,calc(100% - 2rem));margin:auto;padding:1.25rem;background:var(--panel);color:var(--fg)}
 .garmin-dialog::backdrop{background:rgb(0 0 0 / .65)}
 .garmin-dialog .muted{margin-top:.35rem}
+
+.directory-page{width:min(1120px,calc(100% - 48px));margin:0 auto;padding:32px 0 56px}
+.directory-header{display:grid;gap:22px;margin-bottom:24px}
+.directory-back{display:inline-flex;width:fit-content;align-items:center;gap:8px;color:var(--muted);text-decoration:none}
+.directory-back:hover{color:var(--fg)}
+.directory-title,.directory-toolbar{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.directory-title h1{font-size:clamp(26px,4vw,38px);letter-spacing:-.035em;margin:0 0 6px}
+.directory-title p,.directory-toolbar p{margin:0}
+.directory-roster,.directory-editor,.directory-page .astronaut-registration{border:1px solid var(--edge);border-radius:16px;background:var(--panel)}
+.directory-roster{overflow:hidden}
+.directory-toolbar{padding:20px}
+.directory-toolbar h2{display:flex;align-items:center;gap:8px;margin:0 0 5px;font-size:16px}
+.directory-toolbar h2 svg{color:var(--muted)}
+.directory-search,.directory-search label{display:flex;align-items:center;gap:8px}
+.directory-search label{border:1px solid var(--edge);border-radius:8px;padding:0 9px;color:var(--muted);min-width:0}
+.directory-search input{width:100%;min-width:0;border:0;background:transparent;color:var(--fg);padding:9px 0}
+.directory-button{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;white-space:nowrap;border-radius:8px;padding:7px 12px;transition:background-color .16s,border-color .16s}
+.directory-button:not(.primary-action){color:var(--fg);border:1px solid var(--edge);background:transparent}
+.directory-button:not(.primary-action):hover:not(:disabled){background:var(--surface-glint,#303034)}
+.directory-table{width:100%;border-collapse:collapse;text-align:left}
+.directory-table :is(th,td){padding:12px 20px;border-top:1px solid var(--edge)}
+.directory-table thead th{color:var(--muted);font-size:.75rem;font-weight:600}
+.directory-table tbody tr[data-selected=true]{background:var(--surface-glint,#292e35)}
+.directory-identity{display:flex;align-items:center;gap:10px}
+.directory-identity small{display:block;color:var(--muted);margin-top:3px;font-weight:400}
+.directory-avatar{display:grid;place-items:center;width:36px;height:36px;flex:none;border:1px solid var(--edge);border-radius:10px;color:var(--accent);font-size:.75rem}
+.directory-device{display:inline-flex;align-items:center;gap:7px;color:var(--muted);white-space:nowrap}
+.directory-device::before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.directory-device[data-linked=true]{color:#a5ccb3}
+.directory-message,.directory-empty{margin:0;padding:16px 20px;border-top:1px solid var(--edge)}
+.directory-editor,.directory-page .astronaut-registration{margin:20px 0 0;padding:20px}
+.directory-editor h2,.directory-page .astronaut-registration h2{margin:0 0 14px}
+.directory-editor textarea{font-family:monospace}
+.directory-button.directory-delete{color:#f0a2a2}
+.directory-page .directory-actions{align-items:center}
+@media(max-width:600px){
+  .directory-page{width:calc(100% - 24px);padding-top:20px}
+  .directory-table :is(th,td){padding:10px}
+  .directory-toolbar{padding:14px}
+  .directory-search{width:100%;flex-wrap:wrap}
+  .directory-search label{flex:1;min-width:9rem}
+  .directory-table .directory-actions{align-items:flex-start;flex-direction:column}
+  .directory-avatar{display:none}
+}
+@media(prefers-reduced-motion:reduce){.directory-button{transition:none}}
+
+.registration-dialog{
+  width:min(54rem,calc(100% - 2rem));
+  max-height:calc(100dvh - 2rem);
+  margin:auto;
+  padding:0;
+  overflow:auto;
+  border:1px solid var(--edge);
+  border-radius:16px;
+  background:var(--panel);
+  color:var(--fg);
+}
+.registration-dialog::backdrop{background:rgb(0 0 0 / .72)}
+.directory-page .registration-dialog .astronaut-registration{margin:0;border:0;padding:24px;background:transparent}
+.registration-dialog .review-form{max-width:none}

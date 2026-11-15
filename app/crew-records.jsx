@@ -2,17 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import { useLocalState } from './use-local-state';
+import { CalendarDays, ChevronDown } from 'lucide-react';
 import CrewSwitcher from './crew-switcher';
 
+const recordDate = new Intl.DateTimeFormat('en-US', {dateStyle:'medium', timeZone:'UTC'});
 const format = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
 
 function snapshot(person, source, date, kind) {
   const capturedAt = date.toISOString();
   const day = capturedAt.slice(0, 10);
   const metrics = person.metrics.flatMap(([id, label, value, unit, series, , times]) => {
-    if (!Array.isArray(series) || !Array.isArray(times) || times.length !== series.length) {
+    if (!series?.length || !Array.isArray(series) || !Array.isArray(times) || times.length !== series.length) {
       const latest = typeof value === 'string' && value.trim() ? Number(value.replaceAll(',', '')) : value;
-      return Number.isFinite(latest) ? [{ id, label, unit, latest }] : [];
+      return Number.isFinite(latest) ? [{ id, label, unit, latest }]
+        : typeof value === 'string' && value.trim() ? [{ id, label, unit, latest:value }] : [];
     }
     const dayStart = Date.parse(day + 'T00:00:00Z');
     const readings = series.filter((reading, index) => {
@@ -92,7 +95,7 @@ export default function CrewRecords({ active, crew, selected, onCrew, source, fr
   return <section className="panel crew-records">
     <CrewSwitcher crew={crew} selectedId={selected?.id} onSelect={id => {onCrew(id);setMessage('');}}/>
     <div className="panel-heading">
-      <h2>{selected ? selected.name + ' · Records' : 'Crew records'}</h2>
+      <div><h2>Crew records</h2>{selected && <p className="muted">{selected.name} · {visible.length} {visible.length === 1 ? 'record' : 'records'}</p>}</div>
       <button className="primary-action" onClick={() => setGenerating(!generating)} disabled={!ready || !fresh || !crew.length}
         aria-expanded={generating}>Generate record</button>
     </div>
@@ -103,12 +106,24 @@ export default function CrewRecords({ active, crew, selected, onCrew, source, fr
     </form>}
     {message && <p role="status">{message}</p>}
     <p className="muted">Daily records use UTC and update in this browser while the dashboard is open.</p>
-    {visible.length ? visible.map(record => <details key={record.id}>
-      <summary>{record.day} · {record.kind === 'daily' ? 'Daily' : 'Manual'} · {record.capturedAt.slice(11, 16)} UTC</summary>
-      <ul>{record.metrics.map(metric => <li key={metric.id}>
-        <strong>{metric.label}</strong> · {format.format(metric.latest)} {metric.unit}
-        {metric.count ? ` · Avg ${format.format(metric.average)} · ${metric.count} readings today` : ' · Latest available'}
-      </li>)}</ul>
-    </details>) : <p className="muted">No records for this crew member.</p>}
+    {visible.length ? <div className="record-list">{visible.map(record => <details className="record-entry" key={record.id}>
+      <summary>
+        <CalendarDays size={18} aria-hidden="true"/>
+        <span><strong>{recordDate.format(new Date(record.capturedAt))}</strong><small>
+          <time dateTime={record.capturedAt}>{record.capturedAt.slice(11, 16)} UTC</time> · {record.metrics.length} metrics
+        </small></span>
+        <span className="record-kind">{record.kind === 'daily' ? 'Daily' : 'Manual'}</span>
+        <ChevronDown className="record-chevron" size={16} aria-hidden="true"/>
+      </summary>
+      <div className="table-scroll"><table className="record-table">
+        <thead><tr><th scope="col">Metric</th><th scope="col">Latest</th><th scope="col">Daily average</th><th scope="col">Readings</th></tr></thead>
+        <tbody>{record.metrics.map(metric => <tr key={metric.id}>
+          <th scope="row">{metric.label}</th>
+          <td>{typeof metric.latest === 'number' ? format.format(metric.latest) : metric.latest} <small>{metric.unit}</small></td>
+          <td>{Number.isFinite(metric.average) ? <>{format.format(metric.average)} <small>{metric.unit}</small></> : '—'}</td>
+          <td>{metric.count ?? '—'}</td>
+        </tr>)}</tbody>
+      </table></div>
+    </details>)}</div> : <p className="muted">No records for this crew member.</p>}
   </section>;
 }

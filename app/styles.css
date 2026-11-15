@@ -524,3 +524,21 @@ input:focus-visible,textarea:focus-visible,summary:focus-visible,a:focus-visible
 .notification-row[data-range] .notification-severity{color:var(--range-color,var(--fg))}
 .notification-row[data-range] .notification-severity i{width:8px;height:8px}
 .notification-recommendation p{white-space:pre-wrap}
+
+.crew-records .panel-heading h2{margin:0}
+.crew-records .panel-heading p{margin:5px 0 0}
+.record-list{display:grid;gap:8px;min-width:0}
+.crew-records .record-entry{padding:0;overflow:hidden}
+.record-entry>summary{display:flex;align-items:center;gap:12px;padding:14px 16px;list-style:none}
+.record-entry>summary::-webkit-details-marker{display:none}
+.record-entry>summary:hover{background:var(--surface-glint,#292e35)}
+.record-entry>summary small{display:block;color:var(--muted);margin-top:4px}
+.record-entry .record-kind{margin-inline-start:auto;border:1px solid var(--edge);border-radius:999px;padding:4px 9px;color:var(--muted);font-size:.75rem}
+.record-chevron{flex:none;transition:transform .16s}
+.record-entry[open] .record-chevron{transform:rotate(180deg)}
+.record-table{width:100%;border-collapse:collapse;text-align:left;font-variant-numeric:tabular-nums}
+.record-table :is(th,td){border-top:1px solid var(--edge);padding:10px 16px}
+.record-table thead th,.record-table small{color:var(--muted);font-size:.75rem}
+.record-table td{white-space:nowrap}
+@media(max-width:600px){.record-table :is(th,td){padding:8px}.record-entry>summary{padding:12px}}
+@media(prefers-reduced-motion:reduce){.record-chevron{transition:none}}

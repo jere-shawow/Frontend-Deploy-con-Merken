@@ -13,7 +13,7 @@ const metrics = [
 
 const moods={EXCELENTE:'Excellent',BUENO:'Good',NEUTRAL:'Neutral',CANSADO:'Tired',ESTRESADO:'Stressed',ANSIOSO:'Anxious'};
 
-export default function Registration({busy,onSave,onCancel}) {
+export default function Registration({busy,error,onSave,onCancel}) {
   function submit(event) {
     event.preventDefault();
     const fields=new FormData(event.currentTarget);
@@ -31,8 +31,8 @@ export default function Registration({busy,onSave,onCancel}) {
     onSave(payload);
   }
 
-  return <section className="panel astronaut-registration">
-    <h2>Register astronaut</h2>
+  return <div className="astronaut-registration">
+    <h2 id="registration-title">Register astronaut</h2>
     <form className="review-form" onSubmit={submit}>
       <div className="registration-grid">
         <label>Name<input name="astronautName" required maxLength={100} pattern=".*\S.*"/></label>
@@ -46,10 +46,11 @@ export default function Registration({busy,onSave,onCancel}) {
         </label>)}
       </div>
       <label>Garmin API key (optional)<input type="password" name="garminApiKey" autoComplete="off"/></label>
+      {error && <p className="error" role="alert">{error}</p>}
       <div className="directory-actions">
-        <button className="primary-action" disabled={busy}>{busy?'Saving…':'Register astronaut'}</button>
-        <button type="button" disabled={busy} onClick={onCancel}>Cancel</button>
+        <button className="primary-action directory-button" disabled={busy}>{busy?'Saving…':'Register astronaut'}</button>
+        <button className="directory-button" type="button" disabled={busy} onClick={onCancel}>Cancel</button>
       </div>
     </form>
-  </section>;
+  </div>;
 }
