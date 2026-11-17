@@ -1,35 +1,38 @@
-# frontend CI/CD through AWS Systems Manager
+# CI/CD to clawbot through SSH
 
-Pull requests run CI only. Pushes to main and manual runs on main build and test
-an ARM64 image, then deploy the same image using SSM. AWS credentials come from
-GitHub OIDC; no SSH key, AWS access key or self-hosted runner is required.
+Pull requests run tests and build a Linux AMD64 image. Main builds and tests the
+same image, stores it as a short-lived GitHub artifact and streams it over SSH to
+clawbot. The workflow no longer invokes AWS SSM, S3 or an AWS deployment role.
+AWS services remain running independently; deployment never changes their data.
 
-The shared AWS role MerkenGitHubSSMDeploy trusts only main in the two Merken
-repositories. Repository secrets: AWS_DEPLOY_ROLE_ARN, AWS_REGION,
-SSM_INSTANCE_ID, DEPLOY_ARTIFACT_BUCKET. These identify infrastructure and are
-not permanent credentials. Variable EC2_DEPLOY_ENABLED=true enables deployment.
+Repository variable: `CLAWBOT_DEPLOY_ENABLED=true`.
+Secrets: `CLAWBOT_HOST`, `CLAWBOT_PORT`, `CLAWBOT_USER`,
+`CLAWBOT_SSH_PRIVATE_KEY`, `CLAWBOT_KNOWN_HOSTS`.
+The same dedicated key is used by the two repositories. The host public key is
+pinned from a previously verified SSH session; host-key checking is mandatory.
+No runtime application, database or AWS Bedrock credentials are sent to GitHub.
 
-Images are encrypted in a private S3 bucket and expire after seven days. The
-host downloads with a temporary presigned URL, verifies SHA-256 and uses the
-root-owned /usr/local/sbin/merken-deploy script via Merken-DeployArtifact v2.
-This document is the only Run Command document authorized for the CI role.
+The `pulsys-deploy` account has no Docker group membership or unrestricted sudo.
+Its authorized key forces a root-owned entry point which accepts only `check`
+or `deploy frontend|backend <commit> <checksum>`. It denies interactive shells,
+PTYs, forwarding and arbitrary commands. The host validates the checksum, image
+tag and AMD64 platform before updating the requested service.
 
-The installed deployment script preserves the existing Compose file and runtime
-environment, saves the previous image and applies only an image override. A
-failed health check restores the previous image and marks the workflow failed.
-No database migration rollback is implied. Runtime passwords and existing tokens
-stay on the server and are never passed through GitHub or included in images.
-No docker prune, volume deletion or changes to other services are performed.
+Destination: `/docker/pulsys/compose.yaml`, project `pulsys`, service `frontend`
+or `backend`. Only that service is recreated with `--no-deps --no-build --pull
+never`. Private environment files, bind mounts, memory limits, databases and
+other services remain in place. A host-wide lock serializes both repositories.
+Health-check failure restores the prior Compose image. Database schema changes
+are not rolled back; future migrations require separate review and backup.
 
-Host script source: ssm-host.sh. Install updates deliberately as root after
-review; changing this copy alone does not update the privileged host script.
-Concurrent deployments are serialized by GitHub and a host lock. Image/release
-cleanup is a separate manual task; monitor free disk space.
+Previous Compose files and images are retained in `/docker/pulsys/deploy-releases`.
+No pruning, volume deletion, DNS changes or public web port changes are performed.
+Monitor disk space; deployment fails below 6 GiB rather than removing data.
+The frontend remains on loopback port 23000; backend on 23080.
 
-Frontend: /docker/front-web, project merken-frontend, service dashboard, port
-127.0.0.1:3001, health /login. Backend: /home/ec2-user/backend, project backend,
-service backend, existing port binding preserved, health /healthz.
+`clawbot_host.py` is the reviewed source for `/usr/local/sbin/pulsys-deploy`.
+It is installed deliberately as root; editing this repository copy does not
+replace the privileged host script automatically. `ssh_deploy.py` runs on CI.
+Legacy SSM scripts are retained for reference but no workflow invokes them.
 
-The frontend EC2 role has only AmazonSSMManagedInstanceCore. The backend role
-retains SSM and limited Amazon Nova Pro invocation. Bedrock is for the ground
-backend; Android SLM inference remains offline.
+GitHub secret handling: https://docs.github.com/en/actions/how-tos/write-workflows/choose-what-workflows-do/use-secrets

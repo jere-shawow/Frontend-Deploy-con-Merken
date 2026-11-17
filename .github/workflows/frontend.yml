@@ -1,4 +1,4 @@
-name: Merken frontend CI/CD via SSM
+name: Merken frontend CI/CD to clawbot via SSH
 on:
   pull_request:
     branches: [main]
@@ -15,11 +15,13 @@ defaults:
 
 jobs:
   ci:
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Build ARM64 image
+      - name: Test restricted deployment gate
+        run: python3 -m unittest discover -s deploy -p "test_clawbot_deploy.py"
+      - name: Build AMD64 image
         run: docker build -t merken-frontend:${{ github.sha }} .
       - name: Test dashboard data and display rules in the built image
         run: |
@@ -44,35 +46,31 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
         with:
-          name: frontend-arm64
+          name: frontend-amd64
           path: image.tar.gz
           retention-days: 3
 
   deploy:
-    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.EC2_DEPLOY_ENABLED == 'true'
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.CLAWBOT_DEPLOY_ENABLED == 'true'
     needs: ci
-    runs-on: ubuntu-24.04-arm
+    runs-on: ubuntu-24.04
     timeout-minutes: 40
     permissions:
       contents: read
-      id-token: write
     concurrency:
-      group: frontend-production
+      group: frontend-clawbot
       cancel-in-progress: false
     env:
-      AWS_REGION: ${{ secrets.AWS_REGION }}
-      DEPLOY_ARTIFACT_BUCKET: ${{ secrets.DEPLOY_ARTIFACT_BUCKET }}
-      SSM_INSTANCE_ID: ${{ secrets.SSM_INSTANCE_ID }}
+      CLAWBOT_HOST: ${{ secrets.CLAWBOT_HOST }}
+      CLAWBOT_PORT: ${{ secrets.CLAWBOT_PORT }}
+      CLAWBOT_USER: ${{ secrets.CLAWBOT_USER }}
+      CLAWBOT_SSH_PRIVATE_KEY: ${{ secrets.CLAWBOT_SSH_PRIVATE_KEY }}
+      CLAWBOT_KNOWN_HOSTS: ${{ secrets.CLAWBOT_KNOWN_HOSTS }}
       DEPLOY_APP: frontend
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: frontend-arm64
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ secrets.AWS_REGION }}
-          role-session-name: merken-frontend-${{ github.run_id }}
-      - name: Deploy verified image through SSM
-        run: python3 deploy/ssm_deploy.py
+          name: frontend-amd64
+      - name: Deploy tested image to clawbot over pinned SSH
+        run: python3 deploy/ssh_deploy.py
