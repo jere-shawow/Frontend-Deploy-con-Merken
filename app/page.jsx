@@ -178,6 +178,7 @@ export default function Dashboard() {
     <main>
       <div className="intro command-intro"><div><span className="eyebrow">PULSYS / MISSION CONTROL</span><h1>{current.title}</h1>{current.tag && <p>{current.tag}</p>}</div><a className="directory-link" href="/directory">Astronaut directory ↗</a></div>
       {data?.healthWarning&&<p className="muted" role="status">{data.healthWarning}</p>}
+      {data?.historyWarning&&<p className="error" role="status">{data.historyWarning}</p>}
       {error&&<p className="error" role="alert">{error}</p>}
       {data?.telemetryWarning && <p className="error" role="status">{data.telemetryWarning}</p>}
       {busy&&!data&&<p className="muted" role="status">Loading crew telemetry…</p>}

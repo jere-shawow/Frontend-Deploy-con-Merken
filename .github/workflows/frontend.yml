@@ -27,7 +27,7 @@ jobs:
             --mount type=bind,src="${{ github.workspace }}/lib",dst=/checks,readonly \
             merken-frontend:${{ github.sha }} --test \
             /checks/crew-display.test.mjs /checks/dashboard-crew.test.mjs \
-            /checks/metric-status.test.mjs /checks/reading-window.test.mjs /checks/recommendations-api.test.mjs /checks/saved-recommendations.test.mjs
+            /checks/metric-status.test.mjs /checks/reading-window.test.mjs /checks/recommendations-api.test.mjs /checks/saved-recommendations.test.mjs /checks/observation-history.test.mjs
       - name: Verify login and protected API in the built image
         run: |
           docker run -d --name merken-ci -p 127.0.0.1:3001:3000 \

@@ -143,7 +143,7 @@ export function Trend({metric, statuses, compact=false, featured=false, onSelect
   return <section className={compact?"panel trend compact-trend":"panel trend"} data-status={status} data-range={readingRange(metric)} aria-label={label + ' trend'}>
     <div className="panel-heading"><div><div className="eyebrow">{featured?"PRIMARY TREND":"TELEMETRY TREND"}</div><h2>{label}</h2></div><label className="trend-window">Show <select value={limit} onChange={e=>{setLimit(Number(e.target.value));setReading(null);}}><option value={7}>Last 7 readings</option><option value={14}>Last 14 readings</option><option value={0}>All readings</option></select></label></div>
     {points.length > 0 && <p className="trend-period">{points.length} {metric[7] === 'observed' ? points.length === 1 ? 'observed snapshot' : 'observed snapshots' : points.length === 1 ? 'reading' : 'readings'} · {period}
-      {metric[7] === 'observed' && <><br/>Live observations collected by this dashboard. History starts when connected.</>}</p>}
+      {metric[7] === 'observed' && <><br/>Backend snapshots recorded by the dashboard. Dates are observation times, not sensor sampling times.</>}</p>}
     {readingRange(metric)&&<span className="reading-range-label">Reference range · {rangeLabels[readingRange(metric)]}</span>}
     <div className="trend-summary">
       <div className="trend-current"><span>Current</span><strong>{value ?? 'No reading'} <small>{unit}</small></strong><span className="reading-status"><i/>{states[status]}</span></div>

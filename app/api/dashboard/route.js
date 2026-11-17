@@ -1,8 +1,11 @@
 import {loadNotifications} from '../../../lib/backend-notifications';
 import { loadMerkenTelemetry } from '../../../lib/merken-telemetry';
 import { buildDashboardCrew } from '../../../lib/dashboard-crew';
+import {loadObservationHistory,saveObservationHistory} from '../../../lib/observation-history';
 export const dynamic = 'force-dynamic';
-const observedHistory = new Map();
+const historyFile=process.env.PULSYS_OBSERVATION_HISTORY_FILE;
+let observedHistory=new Map(),historyLoadFailed=false;
+try {observedHistory=loadObservationHistory(historyFile);} catch {historyLoadFailed=true;}
 
 export async function GET() {
   const base=process.env.MERKEN_ASTRONAUTS_URL;
@@ -51,7 +54,14 @@ export async function GET() {
     const observedAt = new Date().toISOString();
     const health = await healthResult;
     const crew = buildDashboardCrew(rows, simulatedCrew, observedHistory, observedAt, health ?? []);
-    return Response.json({source:'backend',crew, observedAt, telemetryWarning, healthWarning:health===null ? "Backend health assessments are unavailable." : undefined, ...await notificationResult},{headers:{'Cache-Control':'no-store'}});
+    let historyWarning=historyLoadFailed?'Saved observations could not be read. The existing file has been preserved.':undefined;
+    if(!historyLoadFailed) {
+      try {saveObservationHistory(historyFile,observedHistory);}
+      catch {historyWarning='Observation history could not be saved. Current observations are available in memory only.';}
+    }
+    return Response.json({source:'backend',crew, observedAt, telemetryWarning,historyWarning,
+      historyPersistence:historyFile&&!historyWarning?'disk':'memory',
+      healthWarning:health===null ? "Backend health assessments are unavailable." : undefined, ...await notificationResult},{headers:{'Cache-Control':'no-store'}});
   } catch {
     return Response.json({error:'Astronaut backend is unreachable.'},{status:502});
   }

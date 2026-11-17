@@ -28,7 +28,7 @@ Actualizado: 2026-11-15. Dashboard de control terrestre para el proyecto NASA Sp
 - `MERKEN_ASTRONAUTS_URL`: origen del directorio y valores actuales, incluida la vinculación Garmin de Gabo.
 - `MERKEN_TELEMETRY_URL` y `MERKEN_TELEMETRY_TOKEN`: feed de mediciones/historial. En producción se utilizan las conexiones existentes entre servicios.
 - La combinación de fuentes está en `lib/dashboard-crew.js`; la selección de los 7 perfiles y presentación de moods, en `lib/crew-display.js`.
-- Las observaciones de valores actuales se guardan en memoria del servidor, hasta 288 por métrica; se reinician al reiniciar el proceso. Son observaciones del dashboard, no mediciones históricas reconstruidas de Garmin.
+- Las observaciones de valores actuales se guardan en memoria del servidor, hasta 288 por métrica; por defecto se reinician al reiniciar el proceso. Con `PULSYS_OBSERVATION_HISTORY_FILE` y un volumen privado escribible por UID 1000 se conservan en disco; el API informa errores de persistencia sin sobrescribir archivos corruptos. Son observaciones del dashboard, no mediciones históricas reconstruidas de Garmin.
 - El frontend actualiza los datos cada minuto. Una falla del upstream debe ser visible; no sustituir silenciosamente datos reales por datos demo.
 - Specialist conserva la integración de informes JSON y revisiones. Los informes del servicio de telemetría requieren IDs compatibles y soporte del backend; consultar su documentación antes de modificar contratos.
 - No modificar el backend, bases de datos ni sincronizadores de Garmin/simulador sin una instrucción concreta del usuario.
