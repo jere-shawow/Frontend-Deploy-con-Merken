@@ -7,7 +7,7 @@ Actualizado: 2026-11-15. Dashboard de control terrestre para el proyecto NASA Sp
 - Repositorio: https://github.com/jere-shawow/Frontend-Deploy-con-Merken
 - Rama de producción: `main`.
 - Web: https://deployconmerken.gabogrobier.dev — entrada por `/login`.
-- Stack: Next.js 16, React 19, lucide-react, CSS y Docker ARM64.
+- Stack: Next.js 16, React 19, lucide-react, CSS y Docker AMD64 en clawbot (AWS histórico ARM64).
 - Trabajar desde la raíz del repositorio disponible. No depender de workdirs, copias de respaldo ni rutas absolutas de un PC específico; no crear worktrees para este flujo.
 - Usuario de demostración: `demo`. La contraseña y el secreto de sesión se consultan en la configuración de ejecución; no guardarlos en Git ni en este archivo.
 
@@ -28,7 +28,7 @@ Actualizado: 2026-11-15. Dashboard de control terrestre para el proyecto NASA Sp
 - `MERKEN_ASTRONAUTS_URL`: origen del directorio y valores actuales, incluida la vinculación Garmin de Gabo.
 - `MERKEN_TELEMETRY_URL` y `MERKEN_TELEMETRY_TOKEN`: feed de mediciones/historial. En producción se utilizan las conexiones existentes entre servicios.
 - La combinación de fuentes está en `lib/dashboard-crew.js`; la selección de los 7 perfiles y presentación de moods, en `lib/crew-display.js`.
-- Las observaciones de valores actuales se guardan en memoria del servidor, hasta 288 por métrica; se reinician al reiniciar el proceso. Son observaciones del dashboard, no mediciones históricas reconstruidas de Garmin.
+- Las observaciones de valores actuales se guardan en memoria del servidor, hasta 288 por métrica; por defecto se reinician al reiniciar el proceso. Con `PULSYS_OBSERVATION_HISTORY_FILE` y un volumen privado escribible por UID 1000 se conservan en disco; el API informa errores de persistencia sin sobrescribir archivos corruptos. Son observaciones del dashboard, no mediciones históricas reconstruidas de Garmin.
 - El frontend actualiza los datos cada minuto. Una falla del upstream debe ser visible; no sustituir silenciosamente datos reales por datos demo.
 - Specialist conserva la integración de informes JSON y revisiones. Los informes del servicio de telemetría requieren IDs compatibles y soporte del backend; consultar su documentación antes de modificar contratos.
 - No modificar el backend, bases de datos ni sincronizadores de Garmin/simulador sin una instrucción concreta del usuario.
@@ -38,9 +38,9 @@ Actualizado: 2026-11-15. Dashboard de control terrestre para el proyecto NASA Sp
 - Pruebas: `node --test lib/*.test.mjs`.
 - Build equivalente al contenedor: `NEXT_STANDALONE=1 npm run build` (adaptar la sintaxis de variable al shell).
 - Conservar autenticación del servidor: cookie firmada HTTP-only, rutas protegidas y logout. `/login` responde 200, `/` sin sesión redirige 307 y `/api/dashboard` sin sesión responde 401.
-- Publicar mediante push a `main` y GitHub Actions; mantener Docker ARM64. No reemplazar CI/CD por copias o builds manuales en EC2.
-- Workflow: `.github/workflows/frontend.yml`. Construye y prueba la imagen, y despliega la misma imagen mediante GitHub OIDC + AWS SSM cuando `EC2_DEPLOY_ENABLED=true`. Consultar `deploy/README.md`.
-- El despliegue preserva Compose, las variables de ejecución y el rollback del host. El contenedor usa puerto 3000 y el front se publica en `127.0.0.1:3001` detrás del proxy HTTPS existente.
+- Publicar mediante push a `main` y GitHub Actions; construir Docker AMD64 para clawbot. No reemplazar CI/CD por copias o builds manuales en EC2.
+- Workflow: `.github/workflows/frontend.yml`. Construye y prueba la imagen, y despliega la misma imagen mediante SSH restringido hacia clawbot cuando `CLAWBOT_DEPLOY_ENABLED=true`. Consultar `deploy/README.md`.
+- El despliegue preserva Compose, las variables de ejecución y el rollback del host. El contenedor usa puerto 3000 y en clawbot el front se publica en `127.0.0.1:23000` para acceso mediante túnel SSH.
 - Configuración del front en EC2: `/docker/front-web/runtime.env`. No incluir `.env*`, tokens, claves SSH o credenciales AWS en Git ni en imágenes.
 - Para dar el despliegue por terminado, comprobar el resultado de Actions, la revisión que ejecuta el contenedor, el login público y los datos de Gabo junto con los perfiles simulados.
 
